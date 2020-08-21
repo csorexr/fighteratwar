@@ -32,16 +32,41 @@ function checkOutOfScreen () {
     }
 }
 info.onCountdownEnd(function () {
-    spawnFighter()
+    if (countDownType == 0) {
+        spawnFighter()
+    } else {
+        if (countDownType < 0) {
+            game.over(false)
+        } else {
+            if (countDownType == 1) {
+                game.over(true)
+            }
+        }
+    }
 })
 function shootWeapon () {
     shootBulletPillar(4, 1)
+}
+function s1clearboard () {
+    while (listGhost.length > 0) {
+        locGhost = listGhost.pop()
+        locGhost.destroy(effects.disintegrate, 500)
+    }
 }
 info.onLifeZero(function () {
     game.over(false)
 })
 sprites.onDestroyed(SpriteKind.Enemy, function (sprite) {
     enemyGhostQuota += 1
+    s1enemycount += -1
+    if (s1enemycount <= 0) {
+        currentStage = 2
+        s1clearboard()
+        if (countDownType != 1) {
+            countDownType = 1
+            info.startCountdown(1)
+        }
+    }
     listGhost.removeAt(listGhost.indexOf(sprite))
 })
 function shootBulletPillar (lvl: number, spread: number) {
@@ -71,12 +96,18 @@ sprites.onOverlap(SpriteKind.Player, SpriteKind.Enemy, function (sprite, otherSp
     info.changeLifeBy(-1)
     info.startCountdown(1)
 })
-let locGhost: Sprite = null
 let projectile: Sprite = null
+let locGhost: Sprite = null
 let fighter: Sprite = null
 let listGhost: Sprite[] = []
+let countDownType = 0
+let currentStage = 0
+let s1enemycount = 0
 game.splash("Stage 1: Ghosts")
+s1enemycount = 15
+currentStage = 1
 scene.setBackgroundColor(15)
+countDownType = 0
 spawnFighter()
 let enemyGhostQuota = 8
 listGhost = []
@@ -84,36 +115,38 @@ game.onUpdate(function () {
     checkOutOfScreen()
 })
 game.onUpdateInterval(500, function () {
-    if (enemyGhostQuota > 0) {
-        enemyGhostQuota += -1
-        locGhost = sprites.create(img`
-            . . . . . . . . . . . . . . . . . . . . . . . . 
-            . . . . . . . . . . . . . . . . . . . . . . . . 
-            . . . . . . . . . . . . . . . . . . . . . . . . 
-            . . . . . . . . . . . . . . . . . . . . . . . . 
-            . . . . . . . . . . f f f f . . . . . . . . . . 
-            . . . . . . . . f f 1 1 1 1 f f . . . . . . . . 
-            . . . . . . . f b 1 1 1 1 1 1 b f . . . . . . . 
-            . . . . . . . f 1 1 1 1 1 1 1 1 f . . . . . . . 
-            . . . . . . f d 1 1 1 1 1 1 1 1 d f . . . . . . 
-            . . . . . . f d 1 1 1 1 1 1 1 1 d f . . . . . . 
-            . . . . . . f d d d 1 1 1 1 d d d f . . . . . . 
-            . . . . . . f b d b f d d f b d b f . . . . . . 
-            . . . . . . f c d c f 1 1 f c d c f . . . . . . 
-            . . . . . . . f b 1 1 1 1 1 1 b f . . . . . . . 
-            . . . . . . f f f c d b 1 b d f f f f . . . . . 
-            . . . . f c 1 1 1 c b f b f c 1 1 1 c f . . . . 
-            . . . . f 1 b 1 b 1 f f f f 1 b 1 b 1 f . . . . 
-            . . . . f b f b f f f f f f b f b f b f . . . . 
-            . . . . . . . . . f f f f f f . . . . . . . . . 
-            . . . . . . . . . . . f f f . . . . . . . . . . 
-            . . . . . . . . . . . . . . . . . . . . . . . . 
-            . . . . . . . . . . . . . . . . . . . . . . . . 
-            . . . . . . . . . . . . . . . . . . . . . . . . 
-            . . . . . . . . . . . . . . . . . . . . . . . . 
-            `, SpriteKind.Enemy)
-        locGhost.setPosition(randint(0, 160), 0)
-        locGhost.setVelocity(1 * (fighter.x - locGhost.x), randint(80, 150))
-        listGhost.push(locGhost)
+    if (currentStage == 1) {
+        if (enemyGhostQuota > 0) {
+            enemyGhostQuota += -1
+            locGhost = sprites.create(img`
+                . . . . . . . . . . . . . . . . . . . . . . . . 
+                . . . . . . . . . . . . . . . . . . . . . . . . 
+                . . . . . . . . . . . . . . . . . . . . . . . . 
+                . . . . . . . . . . . . . . . . . . . . . . . . 
+                . . . . . . . . . . f f f f . . . . . . . . . . 
+                . . . . . . . . f f 1 1 1 1 f f . . . . . . . . 
+                . . . . . . . f b 1 1 1 1 1 1 b f . . . . . . . 
+                . . . . . . . f 1 1 1 1 1 1 1 1 f . . . . . . . 
+                . . . . . . f d 1 1 1 1 1 1 1 1 d f . . . . . . 
+                . . . . . . f d 1 1 1 1 1 1 1 1 d f . . . . . . 
+                . . . . . . f d d d 1 1 1 1 d d d f . . . . . . 
+                . . . . . . f b d b f d d f b d b f . . . . . . 
+                . . . . . . f c d c f 1 1 f c d c f . . . . . . 
+                . . . . . . . f b 1 1 1 1 1 1 b f . . . . . . . 
+                . . . . . . f f f c d b 1 b d f f f f . . . . . 
+                . . . . f c 1 1 1 c b f b f c 1 1 1 c f . . . . 
+                . . . . f 1 b 1 b 1 f f f f 1 b 1 b 1 f . . . . 
+                . . . . f b f b f f f f f f b f b f b f . . . . 
+                . . . . . . . . . f f f f f f . . . . . . . . . 
+                . . . . . . . . . . . f f f . . . . . . . . . . 
+                . . . . . . . . . . . . . . . . . . . . . . . . 
+                . . . . . . . . . . . . . . . . . . . . . . . . 
+                . . . . . . . . . . . . . . . . . . . . . . . . 
+                . . . . . . . . . . . . . . . . . . . . . . . . 
+                `, SpriteKind.Enemy)
+            locGhost.setPosition(randint(0, 160), 0)
+            locGhost.setVelocity(0.7 * (fighter.x - locGhost.x), randint(60, 110))
+            listGhost.push(locGhost)
+        }
     }
 })
