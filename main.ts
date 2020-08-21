@@ -1,3 +1,32 @@
+namespace SpriteKind {
+    export const weapon = SpriteKind.create()
+}
+sprites.onOverlap(SpriteKind.weapon, SpriteKind.Enemy, function (sprite, otherSprite) {
+    otherSprite.destroy(effects.fire, 100)
+    info.changeScoreBy(100)
+    if (Math.percentChance(30)) {
+        powerUp = sprites.create(img`
+            . . . . . . . . . . . . . . . . 
+            . . . . . . . . . . . . . . . . 
+            . . . 5 5 5 5 5 5 5 . . . . . . 
+            . . . 5 5 5 5 5 5 5 5 5 . . . . 
+            . . . 5 5 4 . . . 5 5 5 5 . . . 
+            . . . 5 5 4 . . . . . 5 5 4 . . 
+            . . . 5 5 4 . . . . . 5 5 4 . . 
+            . . . 5 5 4 . . . . . 5 5 4 . . 
+            . . . 5 5 4 . . . . . 5 5 4 . . 
+            . . . 5 5 4 . . . 5 5 5 5 4 . . 
+            . . . 5 5 5 5 5 5 5 5 5 4 . . . 
+            . . . 5 5 5 5 5 5 5 4 4 . . . . 
+            . . . 5 5 4 4 4 4 4 . . . . . . 
+            . . . 5 5 4 . . . . . . . . . . 
+            . . . 5 5 4 . . . . . . . . . . 
+            . . . 5 5 4 . . . . . . . . . . 
+            `, SpriteKind.Food)
+        powerUp.setPosition(otherSprite.x, otherSprite.y)
+        powerUp.setVelocity(0, 50)
+    }
+})
 function spawnFighter () {
     fighter = sprites.create(img`
         . . . . . . . c 2 . . . . . . . 
@@ -20,6 +49,7 @@ function spawnFighter () {
     controller.moveSprite(fighter)
     fighter.setPosition(76, 91)
     fighter.setFlag(SpriteFlag.StayInScreen, true)
+    weaponLevel = 1
 }
 controller.A.onEvent(ControllerButtonEvent.Pressed, function () {
     shootWeapon()
@@ -44,8 +74,14 @@ info.onCountdownEnd(function () {
         }
     }
 })
+function destroyFighter () {
+    fighter.destroy(effects.fire, 200)
+    info.changeLifeBy(-1)
+    info.startCountdown(1)
+    music.playTone(196, music.beat(BeatFraction.Whole))
+}
 function shootWeapon () {
-    shootBulletPillar(4, 1)
+    shootBulletPillar(weaponLevel, 1)
 }
 function s1clearboard () {
     while (listGhost.length > 0) {
@@ -53,8 +89,19 @@ function s1clearboard () {
         locGhost.destroy(effects.disintegrate, 500)
     }
 }
+sprites.onOverlap(SpriteKind.Player, SpriteKind.Projectile, function (sprite, otherSprite) {
+    otherSprite.destroy()
+    destroyFighter()
+})
 info.onLifeZero(function () {
     game.over(false)
+})
+sprites.onOverlap(SpriteKind.Player, SpriteKind.Food, function (sprite, otherSprite) {
+    otherSprite.destroy()
+    sprite.startEffect(effects.halo, 500)
+    if (weaponLevel < 5) {
+        weaponLevel += 1
+    }
 })
 sprites.onDestroyed(SpriteKind.Enemy, function (sprite) {
     enemyGhostQuota += 1
@@ -69,9 +116,22 @@ sprites.onDestroyed(SpriteKind.Enemy, function (sprite) {
     }
     listGhost.removeAt(listGhost.indexOf(sprite))
 })
+function ghostFire () {
+    for (let value of listGhost) {
+        if (Math.percentChance(1)) {
+            projectile = sprites.createProjectileFromSprite(img`
+                . . 5 . . 
+                . 5 5 5 . 
+                5 5 5 5 5 
+                . 5 5 5 . 
+                . . 5 . . 
+                `, value, 0.8 * (fighter.x - value.x), 0.9 * (fighter.y - value.y))
+        }
+    }
+}
 function shootBulletPillar (lvl: number, spread: number) {
     for (let index = 0; index <= lvl; index++) {
-        projectile = sprites.createProjectileFromSprite(img`
+        bullet = sprites.create(img`
             4 b 4 
             4 5 4 
             4 5 4 
@@ -80,31 +140,30 @@ function shootBulletPillar (lvl: number, spread: number) {
             4 5 4 
             4 5 4 
             b 2 b 
-            `, fighter, 0, -100)
-        projectile.y += -7
-        projectile.x += index * 4 - lvl * 2
-        projectile.vx += index * 4 - lvl * 2
+            `, SpriteKind.weapon)
+        bullet.setPosition(fighter.x, fighter.y)
+        bullet.setVelocity(0, -100)
+        bullet.y += -7
+        bullet.x += index * 4 - lvl * 2
+        bullet.vx += index * 4 - lvl * 2
     }
 }
-sprites.onOverlap(SpriteKind.Projectile, SpriteKind.Enemy, function (sprite, otherSprite) {
-    otherSprite.destroy(effects.fire, 100)
-    info.changeScoreBy(100)
-})
 sprites.onOverlap(SpriteKind.Player, SpriteKind.Enemy, function (sprite, otherSprite) {
     otherSprite.destroy(effects.fire, 100)
-    sprite.destroy(effects.disintegrate, 200)
-    info.changeLifeBy(-1)
-    info.startCountdown(1)
+    destroyFighter()
 })
+let bullet: Sprite = null
 let projectile: Sprite = null
 let locGhost: Sprite = null
+let weaponLevel = 0
 let fighter: Sprite = null
+let powerUp: Sprite = null
 let listGhost: Sprite[] = []
 let countDownType = 0
 let currentStage = 0
 let s1enemycount = 0
 game.splash("Stage 1: Ghosts")
-s1enemycount = 15
+s1enemycount = 23
 currentStage = 1
 scene.setBackgroundColor(15)
 countDownType = 0
@@ -113,6 +172,7 @@ let enemyGhostQuota = 8
 listGhost = []
 game.onUpdate(function () {
     checkOutOfScreen()
+    ghostFire()
 })
 game.onUpdateInterval(500, function () {
     if (currentStage == 1) {
