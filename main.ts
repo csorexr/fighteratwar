@@ -2,9 +2,9 @@ namespace SpriteKind {
     export const weapon = SpriteKind.create()
 }
 sprites.onOverlap(SpriteKind.weapon, SpriteKind.Enemy, function (sprite, otherSprite) {
-    otherSprite.destroy(effects.fire, 100)
+    otherSprite.destroy()
     info.changeScoreBy(100)
-    if (Math.percentChance(30)) {
+    if (Math.percentChance(30) && weaponLevel < 2) {
         powerUp = sprites.create(img`
             . . . . . . . . . . . . . . . . 
             . . . . . . . . . . . . . . . . 
@@ -50,9 +50,22 @@ function spawnFighter () {
     fighter.setPosition(76, 91)
     fighter.setFlag(SpriteFlag.StayInScreen, true)
     weaponLevel = 1
+    bFighterDown = false
+}
+function cleanBullets () {
+    if (listBullet.length > 0) {
+        locBullet = listBullet.pop()
+        while (locBullet.y < 0 && listBullet.length > 0) {
+            locBullet.destroy()
+            locBullet = listBullet.pop()
+        }
+        listBullet.push(locBullet)
+    }
 }
 controller.A.onEvent(ControllerButtonEvent.Pressed, function () {
-    shootWeapon()
+    if (!(bFighterDown)) {
+        shootWeapon()
+    }
 })
 function checkOutOfScreen () {
     for (let value of listGhost) {
@@ -76,6 +89,7 @@ info.onCountdownEnd(function () {
 })
 function destroyFighter () {
     fighter.destroy(effects.fire, 200)
+    bFighterDown = true
     info.changeLifeBy(-1)
     info.startCountdown(1)
     music.playTone(196, music.beat(BeatFraction.Whole))
@@ -89,6 +103,44 @@ function s1clearboard () {
         locGhost.destroy(effects.disintegrate, 500)
     }
 }
+function spawnGhost () {
+    if (Math.percentChance(70)) {
+        if (currentStage == 1) {
+            if (enemyGhostQuota > 0) {
+                enemyGhostQuota += -1
+                locGhost = sprites.create(img`
+                    . . . . . . . . . . . . . . . . . . . . . . . . 
+                    . . . . . . . . . . . . . . . . . . . . . . . . 
+                    . . . . . . . . . . . . . . . . . . . . . . . . 
+                    . . . . . . . . . . . . . . . . . . . . . . . . 
+                    . . . . . . . . . . f f f f . . . . . . . . . . 
+                    . . . . . . . . f f 1 1 1 1 f f . . . . . . . . 
+                    . . . . . . . f b 1 1 1 1 1 1 b f . . . . . . . 
+                    . . . . . . . f 1 1 1 1 1 1 1 1 f . . . . . . . 
+                    . . . . . . f d 1 1 1 1 1 1 1 1 d f . . . . . . 
+                    . . . . . . f d 1 1 1 1 1 1 1 1 d f . . . . . . 
+                    . . . . . . f d d d 1 1 1 1 d d d f . . . . . . 
+                    . . . . . . f b d b f d d f b d b f . . . . . . 
+                    . . . . . . f c d c f 1 1 f c d c f . . . . . . 
+                    . . . . . . . f b 1 1 1 1 1 1 b f . . . . . . . 
+                    . . . . . . f f f c d b 1 b d f f f f . . . . . 
+                    . . . . f c 1 1 1 c b f b f c 1 1 1 c f . . . . 
+                    . . . . f 1 b 1 b 1 f f f f 1 b 1 b 1 f . . . . 
+                    . . . . f b f b f f f f f f b f b f b f . . . . 
+                    . . . . . . . . . f f f f f f . . . . . . . . . 
+                    . . . . . . . . . . . f f f . . . . . . . . . . 
+                    . . . . . . . . . . . . . . . . . . . . . . . . 
+                    . . . . . . . . . . . . . . . . . . . . . . . . 
+                    . . . . . . . . . . . . . . . . . . . . . . . . 
+                    . . . . . . . . . . . . . . . . . . . . . . . . 
+                    `, SpriteKind.Enemy)
+                locGhost.setPosition(randint(0, 160), 0)
+                locGhost.setVelocity(0.7 * (fighter.x - locGhost.x), randint(60, 110))
+                listGhost.push(locGhost)
+            }
+        }
+    }
+}
 sprites.onOverlap(SpriteKind.Player, SpriteKind.Projectile, function (sprite, otherSprite) {
     otherSprite.destroy()
     destroyFighter()
@@ -99,7 +151,7 @@ info.onLifeZero(function () {
 sprites.onOverlap(SpriteKind.Player, SpriteKind.Food, function (sprite, otherSprite) {
     otherSprite.destroy()
     sprite.startEffect(effects.halo, 500)
-    if (weaponLevel < 5) {
+    if (weaponLevel < 2) {
         weaponLevel += 1
     }
 })
@@ -118,7 +170,7 @@ sprites.onDestroyed(SpriteKind.Enemy, function (sprite) {
 })
 function ghostFire () {
     for (let value of listGhost) {
-        if (Math.percentChance(1)) {
+        if (Math.percentChance(7)) {
             projectile = sprites.createProjectileFromSprite(img`
                 . . 5 . . 
                 . 5 5 5 . 
@@ -141,7 +193,9 @@ function shootBulletPillar (lvl: number, spread: number) {
             4 5 4 
             b 2 b 
             `, SpriteKind.weapon)
+        listBullet.unshift(bullet)
         bullet.setPosition(fighter.x, fighter.y)
+        bullet.setFlag(SpriteFlag.AutoDestroy, true)
         bullet.setVelocity(0, -100)
         bullet.y += -7
         bullet.x += index * 4 - lvl * 2
@@ -155,10 +209,14 @@ sprites.onOverlap(SpriteKind.Player, SpriteKind.Enemy, function (sprite, otherSp
 let bullet: Sprite = null
 let projectile: Sprite = null
 let locGhost: Sprite = null
-let weaponLevel = 0
+let locBullet: Sprite = null
+let bFighterDown = false
 let fighter: Sprite = null
 let powerUp: Sprite = null
+let weaponLevel = 0
+let listBullet: Sprite[] = []
 let listGhost: Sprite[] = []
+let enemyGhostQuota = 0
 let countDownType = 0
 let currentStage = 0
 let s1enemycount = 0
@@ -168,45 +226,12 @@ currentStage = 1
 scene.setBackgroundColor(15)
 countDownType = 0
 spawnFighter()
-let enemyGhostQuota = 8
+enemyGhostQuota = 8
 listGhost = []
-game.onUpdate(function () {
+listBullet = []
+game.onUpdateInterval(900, function () {
+    spawnGhost()
     checkOutOfScreen()
     ghostFire()
-})
-game.onUpdateInterval(500, function () {
-    if (currentStage == 1) {
-        if (enemyGhostQuota > 0) {
-            enemyGhostQuota += -1
-            locGhost = sprites.create(img`
-                . . . . . . . . . . . . . . . . . . . . . . . . 
-                . . . . . . . . . . . . . . . . . . . . . . . . 
-                . . . . . . . . . . . . . . . . . . . . . . . . 
-                . . . . . . . . . . . . . . . . . . . . . . . . 
-                . . . . . . . . . . f f f f . . . . . . . . . . 
-                . . . . . . . . f f 1 1 1 1 f f . . . . . . . . 
-                . . . . . . . f b 1 1 1 1 1 1 b f . . . . . . . 
-                . . . . . . . f 1 1 1 1 1 1 1 1 f . . . . . . . 
-                . . . . . . f d 1 1 1 1 1 1 1 1 d f . . . . . . 
-                . . . . . . f d 1 1 1 1 1 1 1 1 d f . . . . . . 
-                . . . . . . f d d d 1 1 1 1 d d d f . . . . . . 
-                . . . . . . f b d b f d d f b d b f . . . . . . 
-                . . . . . . f c d c f 1 1 f c d c f . . . . . . 
-                . . . . . . . f b 1 1 1 1 1 1 b f . . . . . . . 
-                . . . . . . f f f c d b 1 b d f f f f . . . . . 
-                . . . . f c 1 1 1 c b f b f c 1 1 1 c f . . . . 
-                . . . . f 1 b 1 b 1 f f f f 1 b 1 b 1 f . . . . 
-                . . . . f b f b f f f f f f b f b f b f . . . . 
-                . . . . . . . . . f f f f f f . . . . . . . . . 
-                . . . . . . . . . . . f f f . . . . . . . . . . 
-                . . . . . . . . . . . . . . . . . . . . . . . . 
-                . . . . . . . . . . . . . . . . . . . . . . . . 
-                . . . . . . . . . . . . . . . . . . . . . . . . 
-                . . . . . . . . . . . . . . . . . . . . . . . . 
-                `, SpriteKind.Enemy)
-            locGhost.setPosition(randint(0, 160), 0)
-            locGhost.setVelocity(0.7 * (fighter.x - locGhost.x), randint(60, 110))
-            listGhost.push(locGhost)
-        }
-    }
+    cleanBullets()
 })
