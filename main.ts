@@ -49,7 +49,7 @@ function spawnFighter () {
     controller.moveSprite(fighter)
     fighter.setPosition(76, 91)
     fighter.setFlag(SpriteFlag.StayInScreen, true)
-    weaponLevel = 1
+    weaponLevel = 0
     bFighterDown = false
 }
 function cleanBullets () {
@@ -63,7 +63,7 @@ function cleanBullets () {
     }
 }
 controller.A.onEvent(ControllerButtonEvent.Pressed, function () {
-    if (!(bFighterDown)) {
+    if (!(bFighterDown) && listBullet.length < 24) {
         shootWeapon()
     }
 })
@@ -229,7 +229,7 @@ spawnFighter()
 enemyGhostQuota = 8
 listGhost = []
 listBullet = []
-game.onUpdateInterval(900, function () {
+game.onUpdateInterval(500, function () {
     spawnGhost()
     checkOutOfScreen()
     ghostFire()
