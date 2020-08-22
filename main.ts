@@ -4,7 +4,7 @@ namespace SpriteKind {
 sprites.onOverlap(SpriteKind.weapon, SpriteKind.Enemy, function (sprite, otherSprite) {
     otherSprite.destroy()
     info.changeScoreBy(100)
-    if (Math.percentChance(30) && weaponLevel < 2) {
+    if (Math.percentChance(30) && weaponLevel < maxWeaponLevel) {
         powerUp = sprites.create(img`
             . . . . . . . . . . . . . . . . 
             . . . . . . . . . . . . . . . . 
@@ -63,7 +63,7 @@ function cleanBullets () {
     }
 }
 controller.A.onEvent(ControllerButtonEvent.Pressed, function () {
-    if (!(bFighterDown) && listBullet.length < 24) {
+    if (!(bFighterDown) && listBullet.length < 20) {
         shootWeapon()
     }
 })
@@ -135,7 +135,7 @@ function spawnGhost () {
                     . . . . . . . . . . . . . . . . . . . . . . . . 
                     `, SpriteKind.Enemy)
                 locGhost.setPosition(randint(0, 160), 0)
-                locGhost.setVelocity(0.7 * (fighter.x - locGhost.x), randint(60, 110))
+                locGhost.setVelocity(0.6 * (fighter.x - locGhost.x), randint(60, 90))
                 listGhost.push(locGhost)
             }
         }
@@ -151,7 +151,7 @@ info.onLifeZero(function () {
 sprites.onOverlap(SpriteKind.Player, SpriteKind.Food, function (sprite, otherSprite) {
     otherSprite.destroy()
     sprite.startEffect(effects.halo, 500)
-    if (weaponLevel < 2) {
+    if (weaponLevel < maxWeaponLevel) {
         weaponLevel += 1
     }
 })
@@ -170,36 +170,41 @@ sprites.onDestroyed(SpriteKind.Enemy, function (sprite) {
 })
 function ghostFire () {
     for (let value of listGhost) {
-        if (Math.percentChance(7)) {
-            projectile = sprites.createProjectileFromSprite(img`
-                . . 5 . . 
-                . 5 5 5 . 
-                5 5 5 5 5 
-                . 5 5 5 . 
-                . . 5 . . 
-                `, value, 0.8 * (fighter.x - value.x), 0.9 * (fighter.y - value.y))
+        if (value.y < 95) {
+            if (Math.percentChance(7)) {
+                projectile = sprites.createProjectileFromSprite(img`
+                    . . 5 . . 
+                    . 5 5 5 . 
+                    5 5 5 5 5 
+                    . 5 5 5 . 
+                    . . 5 . . 
+                    `, value, 0.8 * (fighter.x - value.x), 0.9 * (fighter.y - value.y))
+            }
         }
     }
 }
 function shootBulletPillar (lvl: number, spread: number) {
     for (let index = 0; index <= lvl; index++) {
-        bullet = sprites.create(img`
-            4 b 4 
-            4 5 4 
-            4 5 4 
-            4 5 4 
-            4 5 4 
-            4 5 4 
-            4 5 4 
-            b 2 b 
-            `, SpriteKind.weapon)
-        listBullet.unshift(bullet)
-        bullet.setPosition(fighter.x, fighter.y)
-        bullet.setFlag(SpriteFlag.AutoDestroy, true)
-        bullet.setVelocity(0, -100)
+        bullet = sprites.createProjectileFromSprite(img`
+            4 b 4 4 
+            4 5 5 4 
+            4 5 5 4 
+            4 5 5 4 
+            4 5 5 4 
+            4 5 5 4 
+            4 5 5 4 
+            4 5 5 4 
+            4 5 5 4 
+            4 2 2 4 
+            `, fighter, 0, -100)
+        bullet.setKind(SpriteKind.weapon)
+        bullet.setFlag(SpriteFlag.AutoDestroy, false)
         bullet.y += -7
         bullet.x += index * 4 - lvl * 2
-        bullet.vx += index * 4 - lvl * 2
+        if (spread > 0) {
+            bullet.vx += index * 4 - lvl * 2
+        }
+        listBullet.unshift(bullet)
     }
 }
 sprites.onOverlap(SpriteKind.Player, SpriteKind.Enemy, function (sprite, otherSprite) {
@@ -214,6 +219,7 @@ let bFighterDown = false
 let fighter: Sprite = null
 let powerUp: Sprite = null
 let weaponLevel = 0
+let maxWeaponLevel = 0
 let listBullet: Sprite[] = []
 let listGhost: Sprite[] = []
 let enemyGhostQuota = 0
@@ -229,9 +235,12 @@ spawnFighter()
 enemyGhostQuota = 8
 listGhost = []
 listBullet = []
+maxWeaponLevel = 2
+game.onUpdateInterval(50, function () {
+    cleanBullets()
+})
 game.onUpdateInterval(500, function () {
     spawnGhost()
     checkOutOfScreen()
     ghostFire()
-    cleanBullets()
 })
