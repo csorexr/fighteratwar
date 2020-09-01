@@ -62,11 +62,6 @@ function cleanBullets () {
         listBullet.push(locBullet)
     }
 }
-function initStage (stg: number) {
-    if (stg == 1) {
-        spawnBossS1()
-    }
-}
 controller.A.onEvent(ControllerButtonEvent.Pressed, function () {
     if (!(bFighterDown) && listBullet.length < 20) {
         shootWeapon()
@@ -87,7 +82,7 @@ info.onCountdownEnd(function () {
             game.over(false)
         } else {
             if (countDownType == 1) {
-                game.over(true)
+                chgStage(currentStage)
             }
         }
     }
@@ -155,7 +150,7 @@ info.onLifeZero(function () {
 })
 function chgPhase () {
     if (currentStage == 2) {
-        if (curBossPhase == 0) {
+        if (curBossPhase == 1) {
             if (curBoss.y >= 25) {
                 curBoss.setVelocity(0, 0)
                 curBossPhase = 1
@@ -184,6 +179,7 @@ sprites.onDestroyed(SpriteKind.Enemy, function (sprite) {
     listGhost.removeAt(listGhost.indexOf(sprite))
 })
 function spawnBossS1 () {
+    game.splash("WARNING: Boss approaching")
     curBoss = sprites.create(img`
         . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 
         . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 
@@ -234,9 +230,14 @@ function spawnBossS1 () {
         . . . . . . . . . . . . . . . . . . . . . . . . f f f . . . . . . . . . . . . . . . . . . . . . 
         . . . . . . . . . . . . . . . . . . . . . . . . . f f f f . . . . . . . . . . . . . . . . . . . 
         `, SpriteKind.Enemy)
-    curBoss.setPosition(75, -1)
+    curBoss.setPosition(78, 59)
     curBoss.setVelocity(50, 0)
-    curBossPhase = 0
+    curBossPhase = 1
+}
+function chgStage (stg: number) {
+    if (stg == 2) {
+        spawnBossS1()
+    }
 }
 function ghostFire () {
     for (let value of listGhost) {
