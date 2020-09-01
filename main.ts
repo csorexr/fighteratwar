@@ -62,6 +62,11 @@ function cleanBullets () {
         listBullet.push(locBullet)
     }
 }
+function initStage (stg: number) {
+    if (stg == 1) {
+        spawnBossS1()
+    }
+}
 controller.A.onEvent(ControllerButtonEvent.Pressed, function () {
     if (!(bFighterDown) && listBullet.length < 20) {
         shootWeapon()
@@ -148,6 +153,16 @@ sprites.onOverlap(SpriteKind.Player, SpriteKind.Projectile, function (sprite, ot
 info.onLifeZero(function () {
     game.over(false)
 })
+function chgPhase () {
+    if (currentStage == 2) {
+        if (curBossPhase == 0) {
+            if (curBoss.y >= 25) {
+                curBoss.setVelocity(0, 0)
+                curBossPhase = 1
+            }
+        }
+    }
+}
 sprites.onOverlap(SpriteKind.Player, SpriteKind.Food, function (sprite, otherSprite) {
     otherSprite.destroy()
     sprite.startEffect(effects.halo, 500)
@@ -168,6 +183,61 @@ sprites.onDestroyed(SpriteKind.Enemy, function (sprite) {
     }
     listGhost.removeAt(listGhost.indexOf(sprite))
 })
+function spawnBossS1 () {
+    curBoss = sprites.create(img`
+        . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 
+        . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 
+        . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 
+        . . . . . . . . . . . . . . . . . . f f f f f f f f f f f . . . . . . . . . . . . . . . . . . . 
+        . . . . . . . . . . . . . . . . . f d d d d d d d d d d d f . . . . . . . . . . . . . . . . . . 
+        . . . . . . . . . . . . . . . f f d d 1 1 1 1 1 1 1 1 1 d d f f . . . . . . . . . . . . . . . . 
+        . . . . . . . . . . . . . . f 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 f . . . . . . . . . . . . . . . 
+        . . . . . . . . . . . . . f 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 f . . . . . . . . . . . . . . 
+        . . . . . . . . . . . . . f 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 f . . . . . . . . . . . . . . 
+        . . . . . . . . . . . . f 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 f . . . . . . . . . . . . . 
+        . . . . . . . . . . . f d d d 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 d d d f . . . . . . . . . . . . 
+        . . . . . . . . . . . f d d d 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 d d d f . . . . . . . . . . . . 
+        . . . . . . . . . . . f d d d 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 d d d f . . . . . . . . . . . . 
+        . . . . . . . . . . . f d d d 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 d d d f . . . . . . . . . . . . 
+        . . . . . . . . . . . f d d d 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 d d d f . . . . . . . . . . . . 
+        . . . . . . . . . . . f d d d 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 d d d f . . . . . . . . . . . . 
+        . . . . . . . . . . . f d d d 1 1 1 1 f f f 1 1 1 1 f f f 1 1 1 d d d f . . . . . . . . . . . . 
+        . . . . . . . . . . . f d d d 1 1 1 1 f f f 1 1 1 1 f f f 1 1 1 d d d f . . . . . . . . . . . . 
+        . . . . . . . . . . . f d d d d d d 1 f f f 1 1 1 1 f f f 1 1 1 d d d f . . . . . . . . . . . . 
+        . . . . . . . . . . . f c d d d d d 1 f f f 1 1 1 1 f f f 1 1 d d c c f . . . . . . . . . . . . 
+        . . . . . . . . . . . f c c d d d d c f f f 1 1 1 1 f f f c 1 d d c c f . . . . . . . . . . . . 
+        . . . . . . . . . . . . f c d d d d c f f f 1 1 1 1 f f f c d d c c f . . . . . . . . . . . . . 
+        . . . . . . . . . . . . . f c d d d d f f f 1 1 1 1 f f f d d c c f . . . . . . . . . . . . . . 
+        . . . . . . . . . . . . . f d d d d d d d d d d d d d d d d d c c f . . . . . . . . . . . . . . 
+        . . . . . . . . . . . . . . f d d d d d d d d d d d d d d d d d f . . . . . . . . . . . . . . . 
+        . . . . . . . . . . . . . . . f f d d c d c d c d c d c d d f f . . . . . . . . . . . . . . . . 
+        . . . . . . . . . . . f f f f 1 1 f d c d c d c d c d c d f 1 1 f f f f f f . f . . . . . . . . 
+        . . . . . . . . f f f f 1 1 1 1 1 1 f f f f f f f f f f f 1 1 1 1 1 1 1 f f f f f f . . . . . . 
+        . . . . . . f f f 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 f f . . . . . 
+        . . . . . f f 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 f f . . . . 
+        . . . f f f 1 1 d d d d d d d d d d d d 1 1 1 1 1 1 1 d d d d d d d d d 1 1 1 1 1 1 1 f f . . . 
+        . . . f 1 1 1 1 d d d d d d d d d d d d 1 1 1 1 1 1 1 d d d d d d d d d 1 1 1 1 1 1 1 1 f . . . 
+        . . f 1 1 1 1 1 d d d d d d d d d d d d f f f f f f f d d d d d d d d d 1 1 1 1 1 1 1 1 f f . . 
+        . f f b b b b b b b f f b b b 1 f 1 1 f f f f f f f f f 1 1 1 b b b f b b b b f f b b b 1 f . . 
+        . f 1 b b b b b b b f f b b b 1 f 1 1 f f f f f f f f f 1 1 1 b b b f b b b b f f b b b 1 1 f . 
+        . f f b b b b b b b f f b b b 1 f f 1 f f f f f f f f f 1 1 1 b b b f b b b b f f b b b 1 f f . 
+        . . f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f . . 
+        . . . . . . . . . . . . . . . . . f f f f f f f f f f f f f f f f . . . . . . . . . . . f . . . 
+        . . . . . . . . . . . . . . . . . f f f f f f f f f f f f f . . . . . . . . . . . . . . . . . . 
+        . . . . . . . . . . . . . . . . . . f f f f f f f f f f . f . . . . . . . . . . . . . . . . . . 
+        . . . . . . . . . . . . . . . . . . . . f f f f f f f f f f . . . . . . . . . . . . . . . . . . 
+        . . . . . . . . . . . . . . . . . . . . f f f f f f f f f . . . . . . . . . . . . . . . . . . . 
+        . . . . . . . . . . . . . . . . . . . . f f f f f f f f f . . . . . . . . . . . . . . . . . . . 
+        . . . . . . . . . . . . . . . . . . . . f . f f f f f . . . . . . . . . . . . . . . . . . . . . 
+        . . . . . . . . . . . . . . . . . . . . . . f f f f f . . . . . . . . . . . . . . . . . . . . . 
+        . . . . . . . . . . . . . . . . . . . . . . . f f f f . . . . . . . . . . . . . . . . . . . . . 
+        . . . . . . . . . . . . . . . . . . . . . . . . f f f . . . . . . . . . . . . . . . . . . . . . 
+        . . . . . . . . . . . . . . . . . . . . . . . . . f f f f . . . . . . . . . . . . . . . . . . . 
+        `, SpriteKind.Enemy)
+    curBoss.setPosition(75, -1)
+    curBoss.setVelocity(50, 0)
+    curBossPhase = 0
+}
 function ghostFire () {
     for (let value of listGhost) {
         if (value.y < 95) {
@@ -213,6 +283,8 @@ sprites.onOverlap(SpriteKind.Player, SpriteKind.Enemy, function (sprite, otherSp
 })
 let bullet: Sprite = null
 let projectile: Sprite = null
+let curBoss: Sprite = null
+let curBossPhase = 0
 let locGhost: Sprite = null
 let locBullet: Sprite = null
 let bFighterDown = false
@@ -227,7 +299,7 @@ let countDownType = 0
 let currentStage = 0
 let s1enemycount = 0
 game.splash("Stage 1: Ghosts")
-s1enemycount = 23
+s1enemycount = 3
 currentStage = 1
 scene.setBackgroundColor(15)
 countDownType = 0
@@ -238,6 +310,7 @@ listBullet = []
 maxWeaponLevel = 2
 game.onUpdateInterval(50, function () {
     cleanBullets()
+    chgPhase()
 })
 game.onUpdateInterval(500, function () {
     spawnGhost()
