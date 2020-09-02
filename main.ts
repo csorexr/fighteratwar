@@ -3,31 +3,10 @@ namespace SpriteKind {
     export const Bosses = SpriteKind.create()
 }
 sprites.onOverlap(SpriteKind.weapon, SpriteKind.Enemy, function (sprite, otherSprite) {
-    otherSprite.destroy()
+    cleanSingleBullet(sprite)
     info.changeScoreBy(100)
-    if (Math.percentChance(30) && weaponLevel < maxWeaponLevel) {
-        powerUp = sprites.create(img`
-            . . . . . . . . . . . . . . . . 
-            . . . . . . . . . . . . . . . . 
-            . . . 5 5 5 5 5 5 5 . . . . . . 
-            . . . 5 5 5 5 5 5 5 5 5 . . . . 
-            . . . 5 5 4 . . . 5 5 5 5 . . . 
-            . . . 5 5 4 . . . . . 5 5 4 . . 
-            . . . 5 5 4 . . . . . 5 5 4 . . 
-            . . . 5 5 4 . . . . . 5 5 4 . . 
-            . . . 5 5 4 . . . . . 5 5 4 . . 
-            . . . 5 5 4 . . . 5 5 5 5 4 . . 
-            . . . 5 5 5 5 5 5 5 5 5 4 . . . 
-            . . . 5 5 5 5 5 5 5 4 4 . . . . 
-            . . . 5 5 4 4 4 4 4 . . . . . . 
-            . . . 5 5 4 . . . . . . . . . . 
-            . . . 5 5 4 . . . . . . . . . . 
-            . . . 5 5 4 . . . . . . . . . . 
-            `, SpriteKind.Food)
-        powerUp.setPosition(otherSprite.x, otherSprite.y)
-        powerUp.setVelocity(0, 50)
-        powerUp.setFlag(SpriteFlag.AutoDestroy, true)
-    }
+    dropPowerUp(30, otherSprite)
+    otherSprite.destroy()
 })
 function spawnFighter () {
     fighter = sprites.create(img`
@@ -64,11 +43,42 @@ function cleanBullets () {
         listBullet.push(locBullet)
     }
 }
+function dropPowerUp (percentage: number, enmy: Sprite) {
+    if (Math.percentChance(percentage) && weaponLevel < maxWeaponLevel) {
+        powerUp = sprites.create(img`
+            . . . . . . . . . . . . . . . . 
+            . . . . . . . . . . . . . . . . 
+            . . . 5 5 5 5 5 5 5 . . . . . . 
+            . . . 5 5 5 5 5 5 5 5 5 . . . . 
+            . . . 5 5 4 . . . 5 5 5 5 . . . 
+            . . . 5 5 4 . . . . . 5 5 4 . . 
+            . . . 5 5 4 . . . . . 5 5 4 . . 
+            . . . 5 5 4 . . . . . 5 5 4 . . 
+            . . . 5 5 4 . . . . . 5 5 4 . . 
+            . . . 5 5 4 . . . 5 5 5 5 4 . . 
+            . . . 5 5 5 5 5 5 5 5 5 4 . . . 
+            . . . 5 5 5 5 5 5 5 4 4 . . . . 
+            . . . 5 5 4 4 4 4 4 . . . . . . 
+            . . . 5 5 4 . . . . . . . . . . 
+            . . . 5 5 4 . . . . . . . . . . 
+            . . . 5 5 4 . . . . . . . . . . 
+            `, SpriteKind.Food)
+        powerUp.setPosition(enmy.x, enmy.y)
+        powerUp.setVelocity(0, 50)
+        powerUp.setFlag(SpriteFlag.AutoDestroy, true)
+    }
+}
 controller.A.onEvent(ControllerButtonEvent.Pressed, function () {
     if (!(bFighterDown) && listBullet.length < 20) {
         shootWeapon()
     }
 })
+function cleanSingleBullet (blt: Sprite) {
+    if (listBullet.length > 0) {
+        listBullet.removeAt(listBullet.indexOf(blt))
+        blt.destroy()
+    }
+}
 function checkOutOfScreen () {
     for (let value of listGhost) {
         if (value.x < 0 || (value.x > 160 || value.y > 120)) {
@@ -168,6 +178,12 @@ sprites.onOverlap(SpriteKind.Player, SpriteKind.Food, function (sprite, otherSpr
         weaponLevel += 1
     }
 })
+function bossBeShot () {
+    curBossHP += -1
+    if (curBossHP <= 0) {
+        curBoss.destroy()
+    }
+}
 sprites.onDestroyed(SpriteKind.Enemy, function (sprite) {
     enemyGhostQuota += 1
     s1enemycount += -1
@@ -235,6 +251,7 @@ function spawnBossS1 () {
         `, SpriteKind.Bosses)
     curBoss.setPosition(78, 59)
     curBoss.setVelocity(50, 0)
+    curBossHP = 40
     curBossPhase = 1
 }
 function chgStage (stg: number) {
@@ -282,20 +299,27 @@ function shootBulletPillar (lvl: number, spread: number) {
         listBullet.unshift(bullet)
     }
 }
+sprites.onOverlap(SpriteKind.weapon, SpriteKind.Bosses, function (sprite, otherSprite) {
+    cleanSingleBullet(sprite)
+    info.changeScoreBy(10)
+    dropPowerUp(1, otherSprite)
+    bossBeShot()
+})
 sprites.onOverlap(SpriteKind.Player, SpriteKind.Enemy, function (sprite, otherSprite) {
     otherSprite.destroy(effects.fire, 100)
     destroyFighter()
 })
 let bullet: Sprite = null
 let projectile: Sprite = null
+let curBossHP = 0
 let curBoss: Sprite = null
 let curBossPhase = 0
 let locGhost: Sprite = null
+let powerUp: Sprite = null
 let locBullet: Sprite = null
 let bFighterDown = false
-let fighter: Sprite = null
-let powerUp: Sprite = null
 let weaponLevel = 0
+let fighter: Sprite = null
 let maxWeaponLevel = 0
 let listBullet: Sprite[] = []
 let listGhost: Sprite[] = []
