@@ -1,5 +1,6 @@
 namespace SpriteKind {
     export const weapon = SpriteKind.create()
+    export const Bosses = SpriteKind.create()
 }
 sprites.onOverlap(SpriteKind.weapon, SpriteKind.Enemy, function (sprite, otherSprite) {
     otherSprite.destroy()
@@ -25,6 +26,7 @@ sprites.onOverlap(SpriteKind.weapon, SpriteKind.Enemy, function (sprite, otherSp
             `, SpriteKind.Food)
         powerUp.setPosition(otherSprite.x, otherSprite.y)
         powerUp.setVelocity(0, 50)
+        powerUp.setFlag(SpriteFlag.AutoDestroy, true)
     }
 })
 function spawnFighter () {
@@ -134,6 +136,7 @@ function spawnGhost () {
                     . . . . . . . . . . . . . . . . . . . . . . . . 
                     . . . . . . . . . . . . . . . . . . . . . . . . 
                     `, SpriteKind.Enemy)
+                locGhost.setFlag(SpriteFlag.AutoDestroy, false)
                 locGhost.setPosition(randint(0, 160), 0)
                 locGhost.setVelocity(0.6 * (fighter.x - locGhost.x), randint(60, 90))
                 listGhost.push(locGhost)
@@ -229,7 +232,7 @@ function spawnBossS1 () {
         . . . . . . . . . . . . . . . . . . . . . . . f f f f . . . . . . . . . . . . . . . . . . . . . 
         . . . . . . . . . . . . . . . . . . . . . . . . f f f . . . . . . . . . . . . . . . . . . . . . 
         . . . . . . . . . . . . . . . . . . . . . . . . . f f f f . . . . . . . . . . . . . . . . . . . 
-        `, SpriteKind.Enemy)
+        `, SpriteKind.Bosses)
     curBoss.setPosition(78, 59)
     curBoss.setVelocity(50, 0)
     curBossPhase = 1
@@ -250,6 +253,7 @@ function ghostFire () {
                     . 5 5 5 . 
                     . . 5 . . 
                     `, value, 0.8 * (fighter.x - value.x), 0.9 * (fighter.y - value.y))
+                projectile.setFlag(SpriteFlag.AutoDestroy, true)
             }
         }
     }
