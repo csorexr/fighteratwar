@@ -79,6 +79,26 @@ function cleanSingleBullet (blt: Sprite) {
         blt.destroy()
     }
 }
+function bossFire () {
+    if (curBossPhase == 2) {
+        if (bossFireCounter == 0) {
+            maxEnemyScatterBullet = 2
+            for (let index = 0; index <= maxEnemyScatterBullet; index++) {
+                projectile = sprites.createProjectileFromSprite(img`
+                    . . 5 . . 
+                    . 5 5 5 . 
+                    5 5 5 5 5 
+                    . 5 5 5 . 
+                    . . 5 . . 
+                    `, curBoss, (index - maxEnemyScatterBullet / 2) * 33 + 0.8 * (fighter.x - curBoss.x), 0.9 * (fighter.y - curBoss.y))
+                projectile.setFlag(SpriteFlag.AutoDestroy, true)
+            }
+            bossFireCounter = 3
+        } else {
+            bossFireCounter += -1
+        }
+    }
+}
 function checkOutOfScreen () {
     for (let value of listGhost) {
         if (value.x < 0 || (value.x > 160 || value.y > 120)) {
@@ -101,6 +121,7 @@ info.onCountdownEnd(function () {
 })
 function destroyFighter () {
     fighter.destroy(effects.fire, 200)
+    countDownType = 0
     bFighterDown = true
     info.changeLifeBy(-1)
     info.startCountdown(1)
@@ -121,30 +142,30 @@ function spawnGhost () {
             if (enemyGhostQuota > 0) {
                 enemyGhostQuota += -1
                 locGhost = sprites.create(img`
-                    . . . . . . . . . . . . . . . . . . . . . . . . 
-                    . . . . . . . . . . . . . . . . . . . . . . . . 
-                    . . . . . . . . . . . . . . . . . . . . . . . . 
-                    . . . . . . . . . . . . . . . . . . . . . . . . 
-                    . . . . . . . . . . f f f f . . . . . . . . . . 
-                    . . . . . . . . f f 1 1 1 1 f f . . . . . . . . 
-                    . . . . . . . f b 1 1 1 1 1 1 b f . . . . . . . 
-                    . . . . . . . f 1 1 1 1 1 1 1 1 f . . . . . . . 
-                    . . . . . . f d 1 1 1 1 1 1 1 1 d f . . . . . . 
-                    . . . . . . f d 1 1 1 1 1 1 1 1 d f . . . . . . 
-                    . . . . . . f d d d 1 1 1 1 d d d f . . . . . . 
-                    . . . . . . f b d b f d d f b d b f . . . . . . 
-                    . . . . . . f c d c f 1 1 f c d c f . . . . . . 
-                    . . . . . . . f b 1 1 1 1 1 1 b f . . . . . . . 
-                    . . . . . . f f f c d b 1 b d f f f f . . . . . 
-                    . . . . f c 1 1 1 c b f b f c 1 1 1 c f . . . . 
-                    . . . . f 1 b 1 b 1 f f f f 1 b 1 b 1 f . . . . 
-                    . . . . f b f b f f f f f f b f b f b f . . . . 
-                    . . . . . . . . . f f f f f f . . . . . . . . . 
-                    . . . . . . . . . . . f f f . . . . . . . . . . 
-                    . . . . . . . . . . . . . . . . . . . . . . . . 
-                    . . . . . . . . . . . . . . . . . . . . . . . . 
-                    . . . . . . . . . . . . . . . . . . . . . . . . 
-                    . . . . . . . . . . . . . . . . . . . . . . . . 
+                    ........................
+                    ........................
+                    ........................
+                    ........................
+                    ..........ffff..........
+                    ........ff1111ff........
+                    .......fb111111bf.......
+                    .......f11111111f.......
+                    ......fd11111111df......
+                    ......fd11111111df......
+                    ......fddd1111dddf......
+                    ......fbdbfddfbdbf......
+                    ......fcdcf11fcdcf......
+                    .......fb111111bf.......
+                    ......fffcdb1bdffff.....
+                    ....fc111cbfbfc111cf....
+                    ....f1b1b1ffff1b1b1f....
+                    ....fbfbffffffbfbfbf....
+                    .........ffffff.........
+                    ...........fff..........
+                    ........................
+                    ........................
+                    ........................
+                    ........................
                     `, SpriteKind.Enemy)
                 locGhost.setFlag(SpriteFlag.AutoDestroy, false)
                 locGhost.setPosition(randint(0, 160), 0)
@@ -164,9 +185,9 @@ info.onLifeZero(function () {
 function chgPhase () {
     if (currentStage == 2) {
         if (curBossPhase == 1) {
-            if (curBoss.y >= 25) {
+            if (curBoss.y >= 28) {
                 curBoss.setVelocity(0, 0)
-                curBossPhase = 1
+                curBossPhase = 2
             }
         }
     }
@@ -200,59 +221,60 @@ sprites.onDestroyed(SpriteKind.Enemy, function (sprite) {
 function spawnBossS1 () {
     game.splash("WARNING: Boss approaching")
     curBoss = sprites.create(img`
-        . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 
-        . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 
-        . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 
-        . . . . . . . . . . . . . . . . . . f f f f f f f f f f f . . . . . . . . . . . . . . . . . . . 
-        . . . . . . . . . . . . . . . . . f d d d d d d d d d d d f . . . . . . . . . . . . . . . . . . 
-        . . . . . . . . . . . . . . . f f d d 1 1 1 1 1 1 1 1 1 d d f f . . . . . . . . . . . . . . . . 
-        . . . . . . . . . . . . . . f 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 f . . . . . . . . . . . . . . . 
-        . . . . . . . . . . . . . f 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 f . . . . . . . . . . . . . . 
-        . . . . . . . . . . . . . f 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 f . . . . . . . . . . . . . . 
-        . . . . . . . . . . . . f 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 f . . . . . . . . . . . . . 
-        . . . . . . . . . . . f d d d 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 d d d f . . . . . . . . . . . . 
-        . . . . . . . . . . . f d d d 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 d d d f . . . . . . . . . . . . 
-        . . . . . . . . . . . f d d d 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 d d d f . . . . . . . . . . . . 
-        . . . . . . . . . . . f d d d 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 d d d f . . . . . . . . . . . . 
-        . . . . . . . . . . . f d d d 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 d d d f . . . . . . . . . . . . 
-        . . . . . . . . . . . f d d d 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 d d d f . . . . . . . . . . . . 
-        . . . . . . . . . . . f d d d 1 1 1 1 f f f 1 1 1 1 f f f 1 1 1 d d d f . . . . . . . . . . . . 
-        . . . . . . . . . . . f d d d 1 1 1 1 f f f 1 1 1 1 f f f 1 1 1 d d d f . . . . . . . . . . . . 
-        . . . . . . . . . . . f d d d d d d 1 f f f 1 1 1 1 f f f 1 1 1 d d d f . . . . . . . . . . . . 
-        . . . . . . . . . . . f c d d d d d 1 f f f 1 1 1 1 f f f 1 1 d d c c f . . . . . . . . . . . . 
-        . . . . . . . . . . . f c c d d d d c f f f 1 1 1 1 f f f c 1 d d c c f . . . . . . . . . . . . 
-        . . . . . . . . . . . . f c d d d d c f f f 1 1 1 1 f f f c d d c c f . . . . . . . . . . . . . 
-        . . . . . . . . . . . . . f c d d d d f f f 1 1 1 1 f f f d d c c f . . . . . . . . . . . . . . 
-        . . . . . . . . . . . . . f d d d d d d d d d d d d d d d d d c c f . . . . . . . . . . . . . . 
-        . . . . . . . . . . . . . . f d d d d d d d d d d d d d d d d d f . . . . . . . . . . . . . . . 
-        . . . . . . . . . . . . . . . f f d d c d c d c d c d c d d f f . . . . . . . . . . . . . . . . 
-        . . . . . . . . . . . f f f f 1 1 f d c d c d c d c d c d f 1 1 f f f f f f . f . . . . . . . . 
-        . . . . . . . . f f f f 1 1 1 1 1 1 f f f f f f f f f f f 1 1 1 1 1 1 1 f f f f f f . . . . . . 
-        . . . . . . f f f 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 f f . . . . . 
-        . . . . . f f 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 f f . . . . 
-        . . . f f f 1 1 d d d d d d d d d d d d 1 1 1 1 1 1 1 d d d d d d d d d 1 1 1 1 1 1 1 f f . . . 
-        . . . f 1 1 1 1 d d d d d d d d d d d d 1 1 1 1 1 1 1 d d d d d d d d d 1 1 1 1 1 1 1 1 f . . . 
-        . . f 1 1 1 1 1 d d d d d d d d d d d d f f f f f f f d d d d d d d d d 1 1 1 1 1 1 1 1 f f . . 
-        . f f b b b b b b b f f b b b 1 f 1 1 f f f f f f f f f 1 1 1 b b b f b b b b f f b b b 1 f . . 
-        . f 1 b b b b b b b f f b b b 1 f 1 1 f f f f f f f f f 1 1 1 b b b f b b b b f f b b b 1 1 f . 
-        . f f b b b b b b b f f b b b 1 f f 1 f f f f f f f f f 1 1 1 b b b f b b b b f f b b b 1 f f . 
-        . . f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f . . 
-        . . . . . . . . . . . . . . . . . f f f f f f f f f f f f f f f f . . . . . . . . . . . f . . . 
-        . . . . . . . . . . . . . . . . . f f f f f f f f f f f f f . . . . . . . . . . . . . . . . . . 
-        . . . . . . . . . . . . . . . . . . f f f f f f f f f f . f . . . . . . . . . . . . . . . . . . 
-        . . . . . . . . . . . . . . . . . . . . f f f f f f f f f f . . . . . . . . . . . . . . . . . . 
-        . . . . . . . . . . . . . . . . . . . . f f f f f f f f f . . . . . . . . . . . . . . . . . . . 
-        . . . . . . . . . . . . . . . . . . . . f f f f f f f f f . . . . . . . . . . . . . . . . . . . 
-        . . . . . . . . . . . . . . . . . . . . f . f f f f f . . . . . . . . . . . . . . . . . . . . . 
-        . . . . . . . . . . . . . . . . . . . . . . f f f f f . . . . . . . . . . . . . . . . . . . . . 
-        . . . . . . . . . . . . . . . . . . . . . . . f f f f . . . . . . . . . . . . . . . . . . . . . 
-        . . . . . . . . . . . . . . . . . . . . . . . . f f f . . . . . . . . . . . . . . . . . . . . . 
-        . . . . . . . . . . . . . . . . . . . . . . . . . f f f f . . . . . . . . . . . . . . . . . . . 
+        ................................................
+        ................................................
+        ................................................
+        ..................fffffffffff...................
+        .................fdddddddddddf..................
+        ...............ffdd111111111ddff................
+        ..............f11111111111111111f...............
+        .............f1111111111111111111f..............
+        .............f1111111111111111111f..............
+        ............f111111111111111111111f.............
+        ...........fddd11111111111111111dddf............
+        ...........fddd11111111111111111dddf............
+        ...........fddd11111111111111111dddf............
+        ...........fddd11111111111111111dddf............
+        ...........fddd11111111111111111dddf............
+        ...........fddd11111111111111111dddf............
+        ...........fddd1111fff1111fff111dddf............
+        ...........fddd1111fff1111fff111dddf............
+        ...........fdddddd1fff1111fff111dddf............
+        ...........fcddddd1fff1111fff11ddccf............
+        ...........fccddddcfff1111fffc1ddccf............
+        ............fcddddcfff1111fffcddccf.............
+        .............fcddddfff1111fffddccf..............
+        .............fdddddddddddddddddccf..............
+        ..............fdddddddddddddddddf...............
+        ...............ffddcdcdcdcdcddff................
+        ...........ffff11fdcdcdcdcdcdf11ffffff.f........
+        ........ffff111111fffffffffff1111111ffffff......
+        ......fff11111111111111111111111111111111ff.....
+        .....ff11111111111111111111111111111111111ff....
+        ...fff11dddddddddddd1111111ddddddddd1111111ff...
+        ...f1111dddddddddddd1111111ddddddddd11111111f...
+        ..f11111ddddddddddddfffffffddddddddd11111111ff..
+        .ffbbbbbbbffbbb1f11fffffffff111bbbfbbbbffbbb1f..
+        .f1bbbbbbbffbbb1f11fffffffff111bbbfbbbbffbbb11f.
+        .ffbbbbbbbffbbb1ff1fffffffff111bbbfbbbbffbbb1ff.
+        ..ffffffffffffffffffffffffffffffffffffffffffff..
+        .................ffffffffffffffff...........f...
+        .................fffffffffffff..................
+        ..................ffffffffff.f..................
+        ....................ffffffffff..................
+        ....................fffffffff...................
+        ....................fffffffff...................
+        ....................f.fffff.....................
+        ......................fffff.....................
+        .......................ffff.....................
+        ........................fff.....................
+        .........................ffff...................
         `, SpriteKind.Bosses)
-    curBoss.setPosition(78, 59)
-    curBoss.setVelocity(50, 0)
-    curBossHP = 40
+    curBoss.setPosition(80, -1)
+    curBoss.setVelocity(0, 50)
+    curBossHP = 150
     curBossPhase = 1
+    bossFireCounter = 0
 }
 function chgStage (stg: number) {
     if (stg == 2) {
@@ -310,11 +332,13 @@ sprites.onOverlap(SpriteKind.Player, SpriteKind.Enemy, function (sprite, otherSp
     destroyFighter()
 })
 let bullet: Sprite = null
-let projectile: Sprite = null
 let curBossHP = 0
-let curBoss: Sprite = null
-let curBossPhase = 0
 let locGhost: Sprite = null
+let curBoss: Sprite = null
+let projectile: Sprite = null
+let maxEnemyScatterBullet = 0
+let bossFireCounter = 0
+let curBossPhase = 0
 let powerUp: Sprite = null
 let locBullet: Sprite = null
 let bFighterDown = false
@@ -342,7 +366,12 @@ game.onUpdateInterval(50, function () {
     chgPhase()
 })
 game.onUpdateInterval(500, function () {
-    spawnGhost()
+    if (currentStage == 1) {
+        spawnGhost()
+        ghostFire()
+    }
+    if (currentStage == 2) {
+        bossFire()
+    }
     checkOutOfScreen()
-    ghostFire()
 })
