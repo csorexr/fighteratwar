@@ -203,6 +203,7 @@ function bossBeShot () {
     curBossHP += -1
     if (curBossHP <= 0) {
         curBoss.destroy()
+        game.over(true)
     }
 }
 sprites.onDestroyed(SpriteKind.Enemy, function (sprite) {
