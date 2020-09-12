@@ -33,6 +33,13 @@ function spawnFighter () {
     weaponLevel = 0
     bFighterDown = false
 }
+function s1clearboard () {
+    while (listGhost.length > 0) {
+        locGhost = listGhost.pop()
+        locGhost.destroy(effects.disintegrate, 500)
+    }
+    startOperationCountDwn(1)
+}
 function cleanBullets () {
     if (listBullet.length > 0) {
         locBullet = listBullet.pop()
@@ -94,6 +101,38 @@ function bossFire () {
                 projectile.setFlag(SpriteFlag.AutoDestroy, true)
             }
             bossFireCounter = 3
+            bossPhaseFireCounter += -1
+        } else {
+            bossFireCounter += -1
+        }
+    }
+    if (curBossPhase == 3) {
+        if (bossFireCounter == 0) {
+            projectile = sprites.createProjectileFromSprite(img`
+                9 9 9 9 9 9 9 9 9 9 9 9 
+                9 9 9 9 9 9 9 9 9 9 9 9 
+                9 9 9 9 9 9 9 9 9 9 9 9 
+                9 9 9 9 9 9 9 9 9 9 9 9 
+                9 9 9 9 9 9 9 1 9 9 9 9 
+                9 9 9 9 9 9 9 1 9 9 9 9 
+                9 9 9 9 9 9 9 1 9 9 9 9 
+                9 9 9 9 9 9 9 1 9 9 9 9 
+                9 9 9 9 9 9 9 1 9 9 9 9 
+                9 9 9 1 9 9 9 1 9 9 9 9 
+                9 9 9 1 9 9 9 1 9 9 9 9 
+                9 9 9 1 9 9 9 1 9 9 9 9 
+                9 9 9 1 9 9 9 1 9 9 9 9 
+                9 9 9 1 9 9 9 1 9 9 9 9 
+                9 9 9 9 9 9 9 1 9 9 9 9 
+                9 9 9 9 9 9 9 1 9 9 9 9 
+                9 9 9 9 9 9 9 1 9 9 9 9 
+                9 9 9 9 9 9 9 9 9 9 9 9 
+                9 9 9 9 9 9 9 9 9 9 9 9 
+                9 9 9 9 9 9 9 9 9 9 9 9 
+                `, curBoss, 0, 1.5 * (fighter.y - curBoss.y))
+            projectile.setFlag(SpriteFlag.AutoDestroy, true)
+            bossFireCounter = 2
+            bossPhaseFireCounter += -1
         } else {
             bossFireCounter += -1
         }
@@ -107,6 +146,7 @@ function checkOutOfScreen () {
     }
 }
 info.onCountdownEnd(function () {
+    countDownType = listCountdownOp.shift()
     if (countDownType == 0) {
         spawnFighter()
     } else {
@@ -118,23 +158,20 @@ info.onCountdownEnd(function () {
             }
         }
     }
+    if (listCountdownOp.length > 0) {
+        countDownType = listCountdownOp[0]
+        info.startCountdown(1)
+    }
 })
 function destroyFighter () {
     fighter.destroy(effects.fire, 200)
-    countDownType = 0
     bFighterDown = true
     info.changeLifeBy(-1)
-    info.startCountdown(1)
+    startOperationCountDwn(0)
     music.playTone(196, music.beat(BeatFraction.Whole))
 }
 function shootWeapon () {
     shootBulletPillar(weaponLevel, 1)
-}
-function s1clearboard () {
-    while (listGhost.length > 0) {
-        locGhost = listGhost.pop()
-        locGhost.destroy(effects.disintegrate, 500)
-    }
 }
 function spawnGhost () {
     if (Math.percentChance(70)) {
@@ -188,6 +225,30 @@ function chgPhase () {
             if (curBoss.y >= 28) {
                 curBoss.setVelocity(0, 0)
                 curBossPhase = 2
+                bossPhaseFireCounter = 4
+            }
+        }
+        if (curBossPhase == 2) {
+            if (bossPhaseFireCounter <= 0) {
+                curBossPhase = 3
+                bossPhaseFireCounter = 8
+            }
+        }
+        if (curBossPhase == 3) {
+            if (bossPhaseFireCounter <= 0) {
+                curBoss.setVelocity(0, 0)
+                curBossPhase = 2
+                bossPhaseFireCounter = 4
+            } else {
+                if (Math.abs(fighter.x - curBoss.x) < 10) {
+                    curBoss.setVelocity(0, 0)
+                } else {
+                    if (fighter.x < curBoss.x) {
+                        curBoss.setVelocity(-100, 0)
+                    } else {
+                        curBoss.setVelocity(100, 0)
+                    }
+                }
             }
         }
     }
@@ -212,10 +273,6 @@ sprites.onDestroyed(SpriteKind.Enemy, function (sprite) {
     if (s1enemycount <= 0) {
         currentStage = 2
         s1clearboard()
-        if (countDownType != 1) {
-            countDownType = 1
-            info.startCountdown(1)
-        }
     }
     listGhost.removeAt(listGhost.indexOf(sprite))
 })
@@ -282,9 +339,17 @@ function chgStage (stg: number) {
         spawnBossS1()
     }
 }
+function startOperationCountDwn (opType: number) {
+    if (listCountdownOp.indexOf(opType) < 0) {
+        if (listCountdownOp.length == 0) {
+            info.startCountdown(1)
+        }
+        listCountdownOp.push(opType)
+    }
+}
 function ghostFire () {
-    for (let value of listGhost) {
-        if (value.y < 95) {
+    for (let value2 of listGhost) {
+        if (value2.y < 95) {
             if (Math.percentChance(7)) {
                 projectile = sprites.createProjectileFromSprite(img`
                     . . 5 . . 
@@ -292,14 +357,14 @@ function ghostFire () {
                     5 5 5 5 5 
                     . 5 5 5 . 
                     . . 5 . . 
-                    `, value, 0.8 * (fighter.x - value.x), 0.9 * (fighter.y - value.y))
+                    `, value2, 0.8 * (fighter.x - value2.x), 0.9 * (fighter.y - value2.y))
                 projectile.setFlag(SpriteFlag.AutoDestroy, true)
             }
         }
     }
 }
 function shootBulletPillar (lvl: number, spread: number) {
-    for (let index = 0; index <= lvl; index++) {
+    for (let index2 = 0; index2 <= lvl; index2++) {
         bullet = sprites.createProjectileFromSprite(img`
             4 b 4 4 
             4 5 5 4 
@@ -315,9 +380,9 @@ function shootBulletPillar (lvl: number, spread: number) {
         bullet.setKind(SpriteKind.weapon)
         bullet.setFlag(SpriteFlag.AutoDestroy, false)
         bullet.y += -7
-        bullet.x += index * 4 - lvl * 2
+        bullet.x += index2 * 4 - lvl * 2
         if (spread > 0) {
-            bullet.vx += index * 4 - lvl * 2
+            bullet.vx += index2 * 4 - lvl * 2
         }
         listBullet.unshift(bullet)
     }
@@ -334,7 +399,7 @@ sprites.onOverlap(SpriteKind.Player, SpriteKind.Enemy, function (sprite, otherSp
 })
 let bullet: Sprite = null
 let curBossHP = 0
-let locGhost: Sprite = null
+let bossPhaseFireCounter = 0
 let curBoss: Sprite = null
 let projectile: Sprite = null
 let maxEnemyScatterBullet = 0
@@ -342,10 +407,12 @@ let bossFireCounter = 0
 let curBossPhase = 0
 let powerUp: Sprite = null
 let locBullet: Sprite = null
+let locGhost: Sprite = null
 let bFighterDown = false
 let weaponLevel = 0
 let fighter: Sprite = null
 let maxWeaponLevel = 0
+let listCountdownOp: number[] = []
 let listBullet: Sprite[] = []
 let listGhost: Sprite[] = []
 let enemyGhostQuota = 0
@@ -361,6 +428,7 @@ spawnFighter()
 enemyGhostQuota = 8
 listGhost = []
 listBullet = []
+listCountdownOp = []
 maxWeaponLevel = 2
 game.onUpdateInterval(50, function () {
     cleanBullets()
