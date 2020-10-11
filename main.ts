@@ -169,15 +169,18 @@ function sustainBossS1 () {
     }
 }
 function destroyFighter () {
-    fighter.destroy(effects.fire, 200)
-    info.changeLifeBy(-1)
-    music.playTone(196, music.beat(BeatFraction.Whole))
-    if (info.life() > 0) {
-        timer.after(500, function () {
-            spawnFighter()
-        })
-    } else {
-        game.over(false)
+    if (!(bFighterDown)) {
+        bFighterDown = true
+        fighter.destroy(effects.fire, 200)
+        info.changeLifeBy(-1)
+        if (info.life() > 0) {
+            timer.after(500, function () {
+                spawnFighter()
+            })
+        } else {
+            game.over(false)
+        }
+        music.playTone(196, music.beat(BeatFraction.Whole))
     }
 }
 function shootWeapon () {
@@ -234,9 +237,6 @@ function sustainBossS1Phase1 () {
         bossPhaseFireCounter = 4
     }
 }
-info.onLifeZero(function () {
-    game.over(false)
-})
 function chgPhase () {
     if (currentStage == 2) {
         sustainBossS1()
