@@ -8,6 +8,17 @@ sprites.onOverlap(SpriteKind.weapon, SpriteKind.Enemy, function (sprite, otherSp
     dropPowerUp(30, otherSprite)
     otherSprite.destroy()
 })
+function sustainBossS1Phase3 () {
+    // if already finished several shots, change back to phase-2;
+    // else keep following the plane
+    if (bossPhaseFireCounter <= 0) {
+        curBoss.setVelocity(0, 0)
+        curBossPhase = 2
+        bossPhaseFireCounter = 4
+    } else {
+        ensureBossFollowPlayer()
+    }
+}
 function spawnFighter () {
     fighter = sprites.create(img`
         . . . . . . . c 2 . . . . . . . 
@@ -137,37 +148,47 @@ function bossFire () {
         }
     }
 }
-function checkOutOfScreen () {
-	
-}
-info.onCountdownEnd(function () {
-    countDownType = listCountdownOp.shift()
-    if (countDownType == 0) {
-        spawnFighter()
+function ensureBossFollowPlayer () {
+    if (Math.abs(fighter.x - curBoss.x) < 10) {
+        curBoss.setVelocity(0, 0)
     } else {
-        if (countDownType < 0) {
-            game.over(false)
+        if (fighter.x < curBoss.x) {
+            curBoss.setVelocity(-100, 0)
         } else {
-            if (countDownType == 1) {
-                chgStage(currentStage)
-            }
+            curBoss.setVelocity(100, 0)
         }
     }
-    if (listCountdownOp.length > 0) {
-        countDownType = listCountdownOp[0]
-        info.startCountdown(1)
+}
+function sustainBossS1 () {
+    if (curBossPhase == 1) {
+        sustainBossS1Phase1()
+    } else if (curBossPhase == 2) {
+        sustainBossS1Phase2()
+    } else if (curBossPhase == 3) {
+        sustainBossS1Phase3()
     }
-})
+}
 function destroyFighter () {
     fighter.destroy(effects.fire, 200)
-    bFighterDown = true
     info.changeLifeBy(-1)
-    startOperationCountDwn(0)
     music.playTone(196, music.beat(BeatFraction.Whole))
+    if (info.life() > 0) {
+        timer.after(500, function () {
+            spawnFighter()
+        })
+    } else {
+        game.over(false)
+    }
 }
 function shootWeapon () {
     shootBulletPillar(weaponLevel, 1)
 }
+statusbars.onZero(StatusBarKind.Health, function (status) {
+    status.spriteAttachedTo().destroy(effects.disintegrate, 500)
+    timer.after(500, function () {
+        game.over(true)
+    })
+})
 function spawnGhost () {
     if (Math.percentChance(70) && (currentStage == 1 && enemyGhostQuota > 0)) {
         enemyGhostQuota += -1
@@ -206,41 +227,19 @@ sprites.onOverlap(SpriteKind.Player, SpriteKind.Projectile, function (sprite, ot
     otherSprite.destroy()
     destroyFighter()
 })
+function sustainBossS1Phase1 () {
+    if (curBoss.y >= 28) {
+        curBoss.setVelocity(0, 0)
+        curBossPhase = 2
+        bossPhaseFireCounter = 4
+    }
+}
 info.onLifeZero(function () {
     game.over(false)
 })
 function chgPhase () {
     if (currentStage == 2) {
-        if (curBossPhase == 1) {
-            if (curBoss.y >= 28) {
-                curBoss.setVelocity(0, 0)
-                curBossPhase = 2
-                bossPhaseFireCounter = 4
-            }
-        }
-        if (curBossPhase == 2) {
-            if (bossPhaseFireCounter <= 0) {
-                curBossPhase = 3
-                bossPhaseFireCounter = 8
-            }
-        }
-        if (curBossPhase == 3) {
-            if (bossPhaseFireCounter <= 0) {
-                curBoss.setVelocity(0, 0)
-                curBossPhase = 2
-                bossPhaseFireCounter = 4
-            } else {
-                if (Math.abs(fighter.x - curBoss.x) < 10) {
-                    curBoss.setVelocity(0, 0)
-                } else {
-                    if (fighter.x < curBoss.x) {
-                        curBoss.setVelocity(-100, 0)
-                    } else {
-                        curBoss.setVelocity(100, 0)
-                    }
-                }
-            }
-        }
+        sustainBossS1()
     }
 }
 sprites.onOverlap(SpriteKind.Player, SpriteKind.Food, function (sprite, otherSprite) {
@@ -250,20 +249,26 @@ sprites.onOverlap(SpriteKind.Player, SpriteKind.Food, function (sprite, otherSpr
         weaponLevel += 1
     }
 })
-function bossBeShot () {
-    curBossHP += -1
-    if (curBossHP <= 0) {
-        curBoss.destroy()
-        game.over(true)
+function sustainBossS1Phase2 () {
+    if (bossPhaseFireCounter <= 0) {
+        curBossPhase = 3
+        bossPhaseFireCounter = 8
     }
+}
+function bossBeShot () {
+    statusbars.getStatusBarAttachedTo(StatusBarKind.Health, curBoss).value += -1
 }
 sprites.onDestroyed(SpriteKind.Enemy, function (sprite) {
     enemyGhostQuota += 1
     s1enemycount += -1
     if (s1enemycount <= 0) {
-        currentStage = 2
-        s1clearboard()
-        startOperationCountDwn(1)
+        if (currentStage < 2) {
+            currentStage = 2
+            s1clearboard()
+            timer.after(500, function () {
+                spawnBossS1()
+            })
+        }
     }
 })
 function spawnBossS1 () {
@@ -320,22 +325,11 @@ function spawnBossS1 () {
         `, SpriteKind.Bosses)
     curBoss.setPosition(80, -1)
     curBoss.setVelocity(0, 50)
-    curBossHP = 150
+    statusbar = statusbars.create(20, 4, StatusBarKind.Health)
+    statusbar.attachToSprite(curBoss)
+    statusbar.value = 150
     curBossPhase = 1
     bossFireCounter = 0
-}
-function chgStage (stg: number) {
-    if (stg == 2) {
-        spawnBossS1()
-    }
-}
-function startOperationCountDwn (opType: number) {
-    if (listCountdownOp.indexOf(opType) < 0) {
-        if (listCountdownOp.length == 0) {
-            info.startCountdown(1)
-        }
-        listCountdownOp.push(opType)
-    }
 }
 function ghostFire () {
     let listGhost: Sprite[] = []
@@ -389,37 +383,35 @@ sprites.onOverlap(SpriteKind.Player, SpriteKind.Enemy, function (sprite, otherSp
     destroyFighter()
 })
 let bullet: Sprite = null
-let curBossHP = 0
+let statusbar: StatusBarSprite = null
 let locGhost: Sprite = null
-let bossPhaseFireCounter = 0
-let curBoss: Sprite = null
 let projectile: Sprite = null
 let maxEnemyScatterBullet = 0
 let bossFireCounter = 0
-let curBossPhase = 0
 let powerUp: Sprite = null
 let locBullet: Sprite = null
 let sprite_list: Sprite[] = []
 let bFighterDown = false
 let weaponLevel = 0
 let fighter: Sprite = null
+let curBossPhase = 0
+let curBoss: Sprite = null
+let bossPhaseFireCounter = 0
 let maxWeaponLevel = 0
-let listCountdownOp: number[] = []
 let listBullet: Sprite[] = []
 let enemyGhostQuota = 0
-let countDownType = 0
 let currentStage = 0
 let s1enemycount = 0
 game.splash("Stage 1: Ghosts")
 s1enemycount = 23
 currentStage = 1
 scene.setBackgroundColor(15)
-countDownType = 0
+let countDownType = 0
 spawnFighter()
 enemyGhostQuota = 8
 listBullet = []
-listCountdownOp = []
 maxWeaponLevel = 2
+info.setLife(3)
 game.onUpdateInterval(50, function () {
     cleanBullets()
     chgPhase()
@@ -432,5 +424,4 @@ game.onUpdateInterval(500, function () {
     if (currentStage == 2) {
         bossFire()
     }
-    checkOutOfScreen()
 })

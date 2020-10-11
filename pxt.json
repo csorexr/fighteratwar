@@ -2,7 +2,9 @@
     "name": "FighterAtWar",
     "description": "",
     "dependencies": {
-        "device": "*"
+        "device": "*",
+        "Timers": "github:microsoft/arcade-timers#v1.1.0",
+        "pxt-status-bar": "github:jwunderl/pxt-status-bar#v0.3.1"
     },
     "files": [
         "main.blocks",
