@@ -3,7 +3,6 @@ namespace SpriteKind {
     export const Bosses = SpriteKind.create()
 }
 sprites.onOverlap(SpriteKind.weapon, SpriteKind.Enemy, function (sprite, otherSprite) {
-    cleanSingleBullet(sprite)
     info.changeScoreBy(100)
     dropPowerUp(30, otherSprite)
     otherSprite.destroy()
@@ -51,13 +50,11 @@ function s1clearboard () {
     }
 }
 function cleanBullets () {
-    if (listBullet.length > 0) {
-        locBullet = listBullet.pop()
-        while (locBullet.y < 0 && listBullet.length > 0) {
-            locBullet.destroy()
-            locBullet = listBullet.pop()
+    sprite_list2 = sprites.allOfKind(SpriteKind.weapon)
+    for (let value of sprite_list2) {
+        if (value.y < 0) {
+            value.destroy()
         }
-        listBullet.push(locBullet)
     }
 }
 function dropPowerUp (percentage: number, enmy: Sprite) {
@@ -86,16 +83,11 @@ function dropPowerUp (percentage: number, enmy: Sprite) {
     }
 }
 controller.A.onEvent(ControllerButtonEvent.Pressed, function () {
-    if (!(bFighterDown) && listBullet.length < 20) {
+    sprite_list2 = sprites.allOfKind(SpriteKind.weapon)
+    if (!(bFighterDown) && sprite_list2.length < 20) {
         shootWeapon()
     }
 })
-function cleanSingleBullet (blt: Sprite) {
-    if (listBullet.length > 0) {
-        listBullet.removeAt(listBullet.indexOf(blt))
-        blt.destroy()
-    }
-}
 function bossFire () {
     if (curBossPhase == 2) {
         if (bossFireCounter == 0) {
@@ -257,6 +249,7 @@ function sustainBossS1Phase2 () {
 }
 function bossBeShot () {
     statusbars.getStatusBarAttachedTo(StatusBarKind.Health, curBoss).value += -1
+    info.changeScoreBy(10)
 }
 sprites.onDestroyed(SpriteKind.Enemy, function (sprite) {
     enemyGhostQuota += 1
@@ -327,7 +320,7 @@ function spawnBossS1 () {
     curBoss.setVelocity(0, 50)
     statusbar = statusbars.create(20, 4, StatusBarKind.Health)
     statusbar.attachToSprite(curBoss)
-    statusbar.value = 150
+    statusbar.value = 200
     curBossPhase = 1
     bossFireCounter = 0
 }
@@ -369,11 +362,10 @@ function shootBulletPillar (lvl: number, spread: number) {
         if (spread > 0) {
             bullet.vx += index2 * 4 - lvl * 2
         }
-        listBullet.unshift(bullet)
     }
 }
 sprites.onOverlap(SpriteKind.weapon, SpriteKind.Bosses, function (sprite, otherSprite) {
-    cleanSingleBullet(sprite)
+    sprite.destroy()
     info.changeScoreBy(10)
     dropPowerUp(1, otherSprite)
     bossBeShot()
@@ -389,7 +381,7 @@ let projectile: Sprite = null
 let maxEnemyScatterBullet = 0
 let bossFireCounter = 0
 let powerUp: Sprite = null
-let locBullet: Sprite = null
+let sprite_list2: Sprite[] = []
 let sprite_list: Sprite[] = []
 let bFighterDown = false
 let weaponLevel = 0
@@ -398,7 +390,6 @@ let curBossPhase = 0
 let curBoss: Sprite = null
 let bossPhaseFireCounter = 0
 let maxWeaponLevel = 0
-let listBullet: Sprite[] = []
 let enemyGhostQuota = 0
 let currentStage = 0
 let s1enemycount = 0
@@ -406,10 +397,8 @@ game.splash("Stage 1: Ghosts")
 s1enemycount = 23
 currentStage = 1
 scene.setBackgroundColor(15)
-let countDownType = 0
 spawnFighter()
 enemyGhostQuota = 8
-listBullet = []
 maxWeaponLevel = 2
 info.setLife(3)
 game.onUpdateInterval(50, function () {
