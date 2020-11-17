@@ -3,32 +3,21 @@ namespace SpriteKind {
     export const Bosses = SpriteKind.create()
 }
 sprites.onOverlap(SpriteKind.weapon, SpriteKind.Enemy, function (sprite, otherSprite) {
-    otherSprite.destroy()
     info.changeScoreBy(100)
-    if (Math.percentChance(30) && weaponLevel < maxWeaponLevel) {
-        powerUp = sprites.create(img`
-            . . . . . . . . . . . . . . . . 
-            . . . . . . . . . . . . . . . . 
-            . . . 5 5 5 5 5 5 5 . . . . . . 
-            . . . 5 5 5 5 5 5 5 5 5 . . . . 
-            . . . 5 5 4 . . . 5 5 5 5 . . . 
-            . . . 5 5 4 . . . . . 5 5 4 . . 
-            . . . 5 5 4 . . . . . 5 5 4 . . 
-            . . . 5 5 4 . . . . . 5 5 4 . . 
-            . . . 5 5 4 . . . . . 5 5 4 . . 
-            . . . 5 5 4 . . . 5 5 5 5 4 . . 
-            . . . 5 5 5 5 5 5 5 5 5 4 . . . 
-            . . . 5 5 5 5 5 5 5 4 4 . . . . 
-            . . . 5 5 4 4 4 4 4 . . . . . . 
-            . . . 5 5 4 . . . . . . . . . . 
-            . . . 5 5 4 . . . . . . . . . . 
-            . . . 5 5 4 . . . . . . . . . . 
-            `, SpriteKind.Food)
-        powerUp.setPosition(otherSprite.x, otherSprite.y)
-        powerUp.setVelocity(0, 50)
-        powerUp.setFlag(SpriteFlag.AutoDestroy, true)
-    }
+    dropPowerUp(30, otherSprite)
+    otherSprite.destroy()
 })
+function sustainBossS1Phase3 () {
+    // if already finished several shots, change back to phase-2;
+    // else keep following the plane
+    if (bossPhaseFireCounter <= 0) {
+        curBoss.setVelocity(0, 0)
+        curBossPhase = 2
+        bossPhaseFireCounter = 4
+    } else {
+        ensureBossFollowPlayer()
+    }
+}
 function spawnFighter () {
     fighter = sprites.create(img`
         . . . . . . . c 2 . . . . . . . 
@@ -54,111 +43,195 @@ function spawnFighter () {
     weaponLevel = 0
     bFighterDown = false
 }
-function cleanBullets () {
-    if (listBullet.length > 0) {
-        locBullet = listBullet.pop()
-        while (locBullet.y < 0 && listBullet.length > 0) {
-            locBullet.destroy()
-            locBullet = listBullet.pop()
-        }
-        listBullet.push(locBullet)
+function s1clearboard () {
+    sprite_list = sprites.allOfKind(SpriteKind.Enemy)
+    for (let value of sprite_list) {
+        value.destroy(effects.disintegrate, 500)
     }
 }
-controller.A.onEvent(ControllerButtonEvent.Pressed, function () {
-    if (!(bFighterDown) && listBullet.length < 20) {
-        shootWeapon()
-    }
-})
-function checkOutOfScreen () {
-    for (let value of listGhost) {
-        if (value.x < 0 || (value.x > 160 || value.y > 120)) {
+function cleanBullets () {
+    sprite_list2 = sprites.allOfKind(SpriteKind.weapon)
+    for (let value of sprite_list2) {
+        if (value.y < 0) {
             value.destroy()
         }
     }
 }
-info.onCountdownEnd(function () {
-    if (countDownType == 0) {
-        spawnFighter()
-    } else {
-        if (countDownType < 0) {
-            game.over(false)
-        } else {
-            if (countDownType == 1) {
-                chgStage(currentStage)
-            }
-        }
+function dropPowerUp (percentage: number, enmy: Sprite) {
+    if (Math.percentChance(percentage) && weaponLevel < maxWeaponLevel) {
+        powerUp = sprites.create(img`
+            . . . . . . . . . . . . . . . . 
+            . . . . . . . . . . . . . . . . 
+            . . . 5 5 5 5 5 5 5 . . . . . . 
+            . . . 5 5 5 5 5 5 5 5 5 . . . . 
+            . . . 5 5 4 . . . 5 5 5 5 . . . 
+            . . . 5 5 4 . . . . . 5 5 4 . . 
+            . . . 5 5 4 . . . . . 5 5 4 . . 
+            . . . 5 5 4 . . . . . 5 5 4 . . 
+            . . . 5 5 4 . . . . . 5 5 4 . . 
+            . . . 5 5 4 . . . 5 5 5 5 4 . . 
+            . . . 5 5 5 5 5 5 5 5 5 4 . . . 
+            . . . 5 5 5 5 5 5 5 4 4 . . . . 
+            . . . 5 5 4 4 4 4 4 . . . . . . 
+            . . . 5 5 4 . . . . . . . . . . 
+            . . . 5 5 4 . . . . . . . . . . 
+            . . . 5 5 4 . . . . . . . . . . 
+            `, SpriteKind.Food)
+        powerUp.setPosition(enmy.x, enmy.y)
+        powerUp.setVelocity(0, 50)
+        powerUp.setFlag(SpriteFlag.AutoDestroy, true)
+    }
+}
+controller.A.onEvent(ControllerButtonEvent.Pressed, function () {
+    sprite_list2 = sprites.allOfKind(SpriteKind.weapon)
+    if (!(bFighterDown) && sprite_list2.length < 20) {
+        shootWeapon()
     }
 })
+function bossFire () {
+    if (curBossPhase == 2) {
+        if (bossFireCounter == 0) {
+            maxEnemyScatterBullet = 2
+            for (let index = 0; index <= maxEnemyScatterBullet; index++) {
+                projectile = sprites.createProjectileFromSprite(img`
+                    . . 5 . . 
+                    . 5 5 5 . 
+                    5 5 5 5 5 
+                    . 5 5 5 . 
+                    . . 5 . . 
+                    `, curBoss, (index - maxEnemyScatterBullet / 2) * 33 + 0.8 * (fighter.x - curBoss.x), 0.9 * (fighter.y - curBoss.y))
+                projectile.setFlag(SpriteFlag.AutoDestroy, true)
+            }
+            bossFireCounter = 3
+            bossPhaseFireCounter += -1
+        } else {
+            bossFireCounter += -1
+        }
+    }
+    if (curBossPhase == 3) {
+        if (bossFireCounter == 0) {
+            projectile = sprites.createProjectileFromSprite(img`
+                9 9 9 9 9 9 9 9 9 9 9 9 
+                9 9 9 9 9 9 9 9 9 9 9 9 
+                9 9 9 9 9 9 9 9 9 9 9 9 
+                9 9 9 9 9 9 9 9 9 9 9 9 
+                9 9 9 9 9 9 9 1 9 9 9 9 
+                9 9 9 9 9 9 9 1 9 9 9 9 
+                9 9 9 9 9 9 9 1 9 9 9 9 
+                9 9 9 9 9 9 9 1 9 9 9 9 
+                9 9 9 9 9 9 9 1 9 9 9 9 
+                9 9 9 1 9 9 9 1 9 9 9 9 
+                9 9 9 1 9 9 9 1 9 9 9 9 
+                9 9 9 1 9 9 9 1 9 9 9 9 
+                9 9 9 1 9 9 9 1 9 9 9 9 
+                9 9 9 1 9 9 9 1 9 9 9 9 
+                9 9 9 9 9 9 9 1 9 9 9 9 
+                9 9 9 9 9 9 9 1 9 9 9 9 
+                9 9 9 9 9 9 9 1 9 9 9 9 
+                9 9 9 9 9 9 9 9 9 9 9 9 
+                9 9 9 9 9 9 9 9 9 9 9 9 
+                9 9 9 9 9 9 9 9 9 9 9 9 
+                `, curBoss, 0, 1.5 * (fighter.y - curBoss.y))
+            projectile.setFlag(SpriteFlag.AutoDestroy, true)
+            bossFireCounter = 2
+            bossPhaseFireCounter += -1
+        } else {
+            bossFireCounter += -1
+        }
+    }
+}
+function ensureBossFollowPlayer () {
+    if (Math.abs(fighter.x - curBoss.x) < 10) {
+        curBoss.setVelocity(0, 0)
+    } else {
+        if (fighter.x < curBoss.x) {
+            curBoss.setVelocity(-100, 0)
+        } else {
+            curBoss.setVelocity(100, 0)
+        }
+    }
+}
+function sustainBossS1 () {
+    if (curBossPhase == 1) {
+        sustainBossS1Phase1()
+    } else if (curBossPhase == 2) {
+        sustainBossS1Phase2()
+    } else if (curBossPhase == 3) {
+        sustainBossS1Phase3()
+    }
+}
 function destroyFighter () {
-    fighter.destroy(effects.fire, 200)
-    bFighterDown = true
-    info.changeLifeBy(-1)
-    info.startCountdown(1)
-    music.playTone(196, music.beat(BeatFraction.Whole))
+    if (!(bFighterDown)) {
+        bFighterDown = true
+        fighter.destroy(effects.fire, 200)
+        info.changeLifeBy(-1)
+        if (info.life() > 0) {
+            timer.after(500, function () {
+                spawnFighter()
+            })
+        } else {
+            game.over(false)
+        }
+        music.playTone(196, music.beat(BeatFraction.Whole))
+    }
 }
 function shootWeapon () {
     shootBulletPillar(weaponLevel, 1)
 }
-function s1clearboard () {
-    while (listGhost.length > 0) {
-        locGhost = listGhost.pop()
-        locGhost.destroy(effects.disintegrate, 500)
-    }
-}
+statusbars.onZero(StatusBarKind.Health, function (status) {
+    status.spriteAttachedTo().destroy(effects.disintegrate, 500)
+    timer.after(500, function () {
+        game.over(true)
+    })
+})
 function spawnGhost () {
-    if (Math.percentChance(70)) {
-        if (currentStage == 1) {
-            if (enemyGhostQuota > 0) {
-                enemyGhostQuota += -1
-                locGhost = sprites.create(img`
-                    . . . . . . . . . . . . . . . . . . . . . . . . 
-                    . . . . . . . . . . . . . . . . . . . . . . . . 
-                    . . . . . . . . . . . . . . . . . . . . . . . . 
-                    . . . . . . . . . . . . . . . . . . . . . . . . 
-                    . . . . . . . . . . f f f f . . . . . . . . . . 
-                    . . . . . . . . f f 1 1 1 1 f f . . . . . . . . 
-                    . . . . . . . f b 1 1 1 1 1 1 b f . . . . . . . 
-                    . . . . . . . f 1 1 1 1 1 1 1 1 f . . . . . . . 
-                    . . . . . . f d 1 1 1 1 1 1 1 1 d f . . . . . . 
-                    . . . . . . f d 1 1 1 1 1 1 1 1 d f . . . . . . 
-                    . . . . . . f d d d 1 1 1 1 d d d f . . . . . . 
-                    . . . . . . f b d b f d d f b d b f . . . . . . 
-                    . . . . . . f c d c f 1 1 f c d c f . . . . . . 
-                    . . . . . . . f b 1 1 1 1 1 1 b f . . . . . . . 
-                    . . . . . . f f f c d b 1 b d f f f f . . . . . 
-                    . . . . f c 1 1 1 c b f b f c 1 1 1 c f . . . . 
-                    . . . . f 1 b 1 b 1 f f f f 1 b 1 b 1 f . . . . 
-                    . . . . f b f b f f f f f f b f b f b f . . . . 
-                    . . . . . . . . . f f f f f f . . . . . . . . . 
-                    . . . . . . . . . . . f f f . . . . . . . . . . 
-                    . . . . . . . . . . . . . . . . . . . . . . . . 
-                    . . . . . . . . . . . . . . . . . . . . . . . . 
-                    . . . . . . . . . . . . . . . . . . . . . . . . 
-                    . . . . . . . . . . . . . . . . . . . . . . . . 
-                    `, SpriteKind.Enemy)
-                locGhost.setFlag(SpriteFlag.AutoDestroy, false)
-                locGhost.setPosition(randint(0, 160), 0)
-                locGhost.setVelocity(0.6 * (fighter.x - locGhost.x), randint(60, 90))
-                listGhost.push(locGhost)
-            }
-        }
+    if (Math.percentChance(70) && (currentStage == 1 && enemyGhostQuota > 0)) {
+        enemyGhostQuota += -1
+        locGhost = sprites.create(img`
+            ........................
+            ........................
+            ........................
+            ........................
+            ..........ffff..........
+            ........ff1111ff........
+            .......fb111111bf.......
+            .......f11111111f.......
+            ......fd11111111df......
+            ......fd11111111df......
+            ......fddd1111dddf......
+            ......fbdbfddfbdbf......
+            ......fcdcf11fcdcf......
+            .......fb111111bf.......
+            ......fffcdb1bdffff.....
+            ....fc111cbfbfc111cf....
+            ....f1b1b1ffff1b1b1f....
+            ....fbfbffffffbfbfbf....
+            .........ffffff.........
+            ...........fff..........
+            ........................
+            ........................
+            ........................
+            ........................
+            `, SpriteKind.Enemy)
+        locGhost.setFlag(SpriteFlag.AutoDestroy, true)
+        locGhost.setPosition(randint(0, 160), 0)
+        locGhost.setVelocity(0.6 * (fighter.x - locGhost.x), randint(60, 90))
     }
 }
 sprites.onOverlap(SpriteKind.Player, SpriteKind.Projectile, function (sprite, otherSprite) {
     otherSprite.destroy()
     destroyFighter()
 })
-info.onLifeZero(function () {
-    game.over(false)
-})
+function sustainBossS1Phase1 () {
+    if (curBoss.y >= 28) {
+        curBoss.setVelocity(0, 0)
+        curBossPhase = 2
+        bossPhaseFireCounter = 4
+    }
+}
 function chgPhase () {
     if (currentStage == 2) {
-        if (curBossPhase == 1) {
-            if (curBoss.y >= 25) {
-                curBoss.setVelocity(0, 0)
-                curBossPhase = 1
-            }
-        }
+        sustainBossS1()
     }
 }
 sprites.onOverlap(SpriteKind.Player, SpriteKind.Food, function (sprite, otherSprite) {
@@ -168,83 +241,93 @@ sprites.onOverlap(SpriteKind.Player, SpriteKind.Food, function (sprite, otherSpr
         weaponLevel += 1
     }
 })
+function sustainBossS1Phase2 () {
+    if (bossPhaseFireCounter <= 0) {
+        curBossPhase = 3
+        bossPhaseFireCounter = 8
+    }
+}
+function bossBeShot () {
+    statusbars.getStatusBarAttachedTo(StatusBarKind.Health, curBoss).value += -1
+    info.changeScoreBy(10)
+}
 sprites.onDestroyed(SpriteKind.Enemy, function (sprite) {
     enemyGhostQuota += 1
     s1enemycount += -1
     if (s1enemycount <= 0) {
-        currentStage = 2
-        s1clearboard()
-        if (countDownType != 1) {
-            countDownType = 1
-            info.startCountdown(1)
+        if (currentStage < 2) {
+            currentStage = 2
+            s1clearboard()
+            timer.after(500, function () {
+                spawnBossS1()
+            })
         }
     }
-    listGhost.removeAt(listGhost.indexOf(sprite))
 })
 function spawnBossS1 () {
     game.splash("WARNING: Boss approaching")
     curBoss = sprites.create(img`
-        . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 
-        . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 
-        . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 
-        . . . . . . . . . . . . . . . . . . f f f f f f f f f f f . . . . . . . . . . . . . . . . . . . 
-        . . . . . . . . . . . . . . . . . f d d d d d d d d d d d f . . . . . . . . . . . . . . . . . . 
-        . . . . . . . . . . . . . . . f f d d 1 1 1 1 1 1 1 1 1 d d f f . . . . . . . . . . . . . . . . 
-        . . . . . . . . . . . . . . f 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 f . . . . . . . . . . . . . . . 
-        . . . . . . . . . . . . . f 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 f . . . . . . . . . . . . . . 
-        . . . . . . . . . . . . . f 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 f . . . . . . . . . . . . . . 
-        . . . . . . . . . . . . f 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 f . . . . . . . . . . . . . 
-        . . . . . . . . . . . f d d d 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 d d d f . . . . . . . . . . . . 
-        . . . . . . . . . . . f d d d 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 d d d f . . . . . . . . . . . . 
-        . . . . . . . . . . . f d d d 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 d d d f . . . . . . . . . . . . 
-        . . . . . . . . . . . f d d d 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 d d d f . . . . . . . . . . . . 
-        . . . . . . . . . . . f d d d 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 d d d f . . . . . . . . . . . . 
-        . . . . . . . . . . . f d d d 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 d d d f . . . . . . . . . . . . 
-        . . . . . . . . . . . f d d d 1 1 1 1 f f f 1 1 1 1 f f f 1 1 1 d d d f . . . . . . . . . . . . 
-        . . . . . . . . . . . f d d d 1 1 1 1 f f f 1 1 1 1 f f f 1 1 1 d d d f . . . . . . . . . . . . 
-        . . . . . . . . . . . f d d d d d d 1 f f f 1 1 1 1 f f f 1 1 1 d d d f . . . . . . . . . . . . 
-        . . . . . . . . . . . f c d d d d d 1 f f f 1 1 1 1 f f f 1 1 d d c c f . . . . . . . . . . . . 
-        . . . . . . . . . . . f c c d d d d c f f f 1 1 1 1 f f f c 1 d d c c f . . . . . . . . . . . . 
-        . . . . . . . . . . . . f c d d d d c f f f 1 1 1 1 f f f c d d c c f . . . . . . . . . . . . . 
-        . . . . . . . . . . . . . f c d d d d f f f 1 1 1 1 f f f d d c c f . . . . . . . . . . . . . . 
-        . . . . . . . . . . . . . f d d d d d d d d d d d d d d d d d c c f . . . . . . . . . . . . . . 
-        . . . . . . . . . . . . . . f d d d d d d d d d d d d d d d d d f . . . . . . . . . . . . . . . 
-        . . . . . . . . . . . . . . . f f d d c d c d c d c d c d d f f . . . . . . . . . . . . . . . . 
-        . . . . . . . . . . . f f f f 1 1 f d c d c d c d c d c d f 1 1 f f f f f f . f . . . . . . . . 
-        . . . . . . . . f f f f 1 1 1 1 1 1 f f f f f f f f f f f 1 1 1 1 1 1 1 f f f f f f . . . . . . 
-        . . . . . . f f f 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 f f . . . . . 
-        . . . . . f f 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 f f . . . . 
-        . . . f f f 1 1 d d d d d d d d d d d d 1 1 1 1 1 1 1 d d d d d d d d d 1 1 1 1 1 1 1 f f . . . 
-        . . . f 1 1 1 1 d d d d d d d d d d d d 1 1 1 1 1 1 1 d d d d d d d d d 1 1 1 1 1 1 1 1 f . . . 
-        . . f 1 1 1 1 1 d d d d d d d d d d d d f f f f f f f d d d d d d d d d 1 1 1 1 1 1 1 1 f f . . 
-        . f f b b b b b b b f f b b b 1 f 1 1 f f f f f f f f f 1 1 1 b b b f b b b b f f b b b 1 f . . 
-        . f 1 b b b b b b b f f b b b 1 f 1 1 f f f f f f f f f 1 1 1 b b b f b b b b f f b b b 1 1 f . 
-        . f f b b b b b b b f f b b b 1 f f 1 f f f f f f f f f 1 1 1 b b b f b b b b f f b b b 1 f f . 
-        . . f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f . . 
-        . . . . . . . . . . . . . . . . . f f f f f f f f f f f f f f f f . . . . . . . . . . . f . . . 
-        . . . . . . . . . . . . . . . . . f f f f f f f f f f f f f . . . . . . . . . . . . . . . . . . 
-        . . . . . . . . . . . . . . . . . . f f f f f f f f f f . f . . . . . . . . . . . . . . . . . . 
-        . . . . . . . . . . . . . . . . . . . . f f f f f f f f f f . . . . . . . . . . . . . . . . . . 
-        . . . . . . . . . . . . . . . . . . . . f f f f f f f f f . . . . . . . . . . . . . . . . . . . 
-        . . . . . . . . . . . . . . . . . . . . f f f f f f f f f . . . . . . . . . . . . . . . . . . . 
-        . . . . . . . . . . . . . . . . . . . . f . f f f f f . . . . . . . . . . . . . . . . . . . . . 
-        . . . . . . . . . . . . . . . . . . . . . . f f f f f . . . . . . . . . . . . . . . . . . . . . 
-        . . . . . . . . . . . . . . . . . . . . . . . f f f f . . . . . . . . . . . . . . . . . . . . . 
-        . . . . . . . . . . . . . . . . . . . . . . . . f f f . . . . . . . . . . . . . . . . . . . . . 
-        . . . . . . . . . . . . . . . . . . . . . . . . . f f f f . . . . . . . . . . . . . . . . . . . 
+        ................................................
+        ................................................
+        ................................................
+        ..................fffffffffff...................
+        .................fdddddddddddf..................
+        ...............ffdd111111111ddff................
+        ..............f11111111111111111f...............
+        .............f1111111111111111111f..............
+        .............f1111111111111111111f..............
+        ............f111111111111111111111f.............
+        ...........fddd11111111111111111dddf............
+        ...........fddd11111111111111111dddf............
+        ...........fddd11111111111111111dddf............
+        ...........fddd11111111111111111dddf............
+        ...........fddd11111111111111111dddf............
+        ...........fddd11111111111111111dddf............
+        ...........fddd1111fff1111fff111dddf............
+        ...........fddd1111fff1111fff111dddf............
+        ...........fdddddd1fff1111fff111dddf............
+        ...........fcddddd1fff1111fff11ddccf............
+        ...........fccddddcfff1111fffc1ddccf............
+        ............fcddddcfff1111fffcddccf.............
+        .............fcddddfff1111fffddccf..............
+        .............fdddddddddddddddddccf..............
+        ..............fdddddddddddddddddf...............
+        ...............ffddcdcdcdcdcddff................
+        ...........ffff11fdcdcdcdcdcdf11ffffff.f........
+        ........ffff111111fffffffffff1111111ffffff......
+        ......fff11111111111111111111111111111111ff.....
+        .....ff11111111111111111111111111111111111ff....
+        ...fff11dddddddddddd1111111ddddddddd1111111ff...
+        ...f1111dddddddddddd1111111ddddddddd11111111f...
+        ..f11111ddddddddddddfffffffddddddddd11111111ff..
+        .ffbbbbbbbffbbb1f11fffffffff111bbbfbbbbffbbb1f..
+        .f1bbbbbbbffbbb1f11fffffffff111bbbfbbbbffbbb11f.
+        .ffbbbbbbbffbbb1ff1fffffffff111bbbfbbbbffbbb1ff.
+        ..ffffffffffffffffffffffffffffffffffffffffffff..
+        .................ffffffffffffffff...........f...
+        .................fffffffffffff..................
+        ..................ffffffffff.f..................
+        ....................ffffffffff..................
+        ....................fffffffff...................
+        ....................fffffffff...................
+        ....................f.fffff.....................
+        ......................fffff.....................
+        .......................ffff.....................
+        ........................fff.....................
+        .........................ffff...................
         `, SpriteKind.Bosses)
-    curBoss.setPosition(78, 59)
-    curBoss.setVelocity(50, 0)
+    curBoss.setPosition(80, -1)
+    curBoss.setVelocity(0, 50)
+    statusbar = statusbars.create(20, 4, StatusBarKind.Health)
+    statusbar.attachToSprite(curBoss)
+    statusbar.value = 200
     curBossPhase = 1
-}
-function chgStage (stg: number) {
-    if (stg == 2) {
-        spawnBossS1()
-    }
+    bossFireCounter = 0
 }
 function ghostFire () {
-    for (let value of listGhost) {
-        if (value.y < 95) {
+    let listGhost: Sprite[] = []
+    for (let value2 of listGhost) {
+        if (value2.y < 95) {
             if (Math.percentChance(7)) {
                 projectile = sprites.createProjectileFromSprite(img`
                     . . 5 . . 
@@ -252,14 +335,14 @@ function ghostFire () {
                     5 5 5 5 5 
                     . 5 5 5 . 
                     . . 5 . . 
-                    `, value, 0.8 * (fighter.x - value.x), 0.9 * (fighter.y - value.y))
+                    `, value2, 0.8 * (fighter.x - value2.x), 0.9 * (fighter.y - value2.y))
                 projectile.setFlag(SpriteFlag.AutoDestroy, true)
             }
         }
     }
 }
 function shootBulletPillar (lvl: number, spread: number) {
-    for (let index = 0; index <= lvl; index++) {
+    for (let index2 = 0; index2 <= lvl; index2++) {
         bullet = sprites.createProjectileFromSprite(img`
             4 b 4 4 
             4 5 5 4 
@@ -275,50 +358,59 @@ function shootBulletPillar (lvl: number, spread: number) {
         bullet.setKind(SpriteKind.weapon)
         bullet.setFlag(SpriteFlag.AutoDestroy, false)
         bullet.y += -7
-        bullet.x += index * 4 - lvl * 2
+        bullet.x += index2 * 4 - lvl * 2
         if (spread > 0) {
-            bullet.vx += index * 4 - lvl * 2
+            bullet.vx += index2 * 4 - lvl * 2
         }
-        listBullet.unshift(bullet)
     }
 }
+sprites.onOverlap(SpriteKind.weapon, SpriteKind.Bosses, function (sprite, otherSprite) {
+    sprite.destroy()
+    info.changeScoreBy(10)
+    dropPowerUp(1, otherSprite)
+    bossBeShot()
+})
 sprites.onOverlap(SpriteKind.Player, SpriteKind.Enemy, function (sprite, otherSprite) {
     otherSprite.destroy(effects.fire, 100)
     destroyFighter()
 })
 let bullet: Sprite = null
-let projectile: Sprite = null
-let curBoss: Sprite = null
-let curBossPhase = 0
+let statusbar: StatusBarSprite = null
 let locGhost: Sprite = null
-let locBullet: Sprite = null
-let bFighterDown = false
-let fighter: Sprite = null
+let projectile: Sprite = null
+let maxEnemyScatterBullet = 0
+let bossFireCounter = 0
 let powerUp: Sprite = null
+let sprite_list2: Sprite[] = []
+let sprite_list: Sprite[] = []
+let bFighterDown = false
 let weaponLevel = 0
+let fighter: Sprite = null
+let curBossPhase = 0
+let curBoss: Sprite = null
+let bossPhaseFireCounter = 0
 let maxWeaponLevel = 0
-let listBullet: Sprite[] = []
-let listGhost: Sprite[] = []
 let enemyGhostQuota = 0
-let countDownType = 0
 let currentStage = 0
 let s1enemycount = 0
 game.splash("Stage 1: Ghosts")
-s1enemycount = 3
+s1enemycount = 23
 currentStage = 1
 scene.setBackgroundColor(15)
-countDownType = 0
 spawnFighter()
 enemyGhostQuota = 8
-listGhost = []
-listBullet = []
 maxWeaponLevel = 2
+info.setLife(3)
 game.onUpdateInterval(50, function () {
     cleanBullets()
     chgPhase()
 })
 game.onUpdateInterval(500, function () {
-    spawnGhost()
-    checkOutOfScreen()
-    ghostFire()
+    if (currentStage == 1) {
+        spawnGhost()
+        ghostFire()
+    }
+    if (currentStage == 2) {
+        bossFire()
+    }
 })
