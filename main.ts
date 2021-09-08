@@ -51,9 +51,9 @@ function s1clearboard () {
 }
 function cleanBullets () {
     sprite_list2 = sprites.allOfKind(SpriteKind.weapon)
-    for (let value of sprite_list2) {
-        if (value.y < 0) {
-            value.destroy()
+    for (let value2 of sprite_list2) {
+        if (value2.y < 0) {
+            value2.destroy()
         }
     }
 }
@@ -219,9 +219,9 @@ function spawnGhost () {
         locGhost.setVelocity(0.6 * (fighter.x - locGhost.x), randint(60, 90))
     }
 }
-function shoot_missile (_type: string, num: number) {
-    if ("missile" == _type) {
-        for (let index = 0; index <= num - 1; index++) {
+function shoot_missile (missile_type: string, num: number) {
+    if ("missile" == missile_type) {
+        for (let index2 = 0; index2 <= num - 1; index2++) {
             new_missle = sprites.createProjectileFromSprite(img`
                 . . 1 1 . . 
                 . d 1 1 1 . 
@@ -235,10 +235,31 @@ function shoot_missile (_type: string, num: number) {
                 1 1 1 1 1 1 
                 1 1 1 1 1 1 
                 1 . 4 4 . 1 
-                `, fighter, Math.map(index, 0, num - 1, -20, 20), 70)
+                `, fighter, Math.map(index2, 0, num - 1, -20, 20), 70)
             new_missle.setKind(SpriteKind.weapon)
             new_missle.ay = -200
         }
+    } else if ("homing" == missile_type) {
+        for (let index2 = 0; index2 <= num - 1; index2++) {
+            new_missle = sprites.createProjectileFromSprite(img`
+                . . 1 1 . . 
+                . d 1 1 1 . 
+                d 1 1 1 1 . 
+                d 1 1 1 1 . 
+                d 1 1 1 1 . 
+                d 1 1 d 1 . 
+                d 1 1 d 1 . 
+                d 1 1 d 1 . 
+                d 1 1 d 1 1 
+                1 1 1 1 1 1 
+                1 1 1 1 1 1 
+                1 . 4 4 . 1 
+                `, fighter, Math.map(index2, 0, num - 1, -20, 20), 70)
+            new_missle.setKind(SpriteKind.weapon)
+            new_missle.ay = -200
+        }
+    } else {
+    	
     }
 }
 sprites.onOverlap(SpriteKind.Player, SpriteKind.Projectile, function (sprite, otherSprite) {
@@ -349,8 +370,8 @@ function spawnBossS1 () {
 }
 function ghostFire () {
     let listGhost: Sprite[] = []
-    for (let value2 of listGhost) {
-        if (value2.y < 95) {
+    for (let value22 of listGhost) {
+        if (value22.y < 95) {
             if (Math.percentChance(7)) {
                 projectile = sprites.createProjectileFromSprite(img`
                     . . 5 . . 
@@ -358,14 +379,14 @@ function ghostFire () {
                     5 5 5 5 5 
                     . 5 5 5 . 
                     . . 5 . . 
-                    `, value2, 0.8 * (fighter.x - value2.x), 0.9 * (fighter.y - value2.y))
+                    `, value22, 0.8 * (fighter.x - value22.x), 0.9 * (fighter.y - value22.y))
                 projectile.setFlag(SpriteFlag.AutoDestroy, true)
             }
         }
     }
 }
 function shootBulletPillar (lvl: number, spread: number) {
-    for (let index2 = 0; index2 <= lvl; index2++) {
+    for (let index22 = 0; index22 <= lvl; index22++) {
         bullet = sprites.createProjectileFromSprite(img`
             4 b 4 4 
             4 5 5 4 
@@ -381,9 +402,9 @@ function shootBulletPillar (lvl: number, spread: number) {
         bullet.setKind(SpriteKind.weapon)
         bullet.setFlag(SpriteFlag.AutoDestroy, false)
         bullet.y += -7
-        bullet.x += index2 * 4 - lvl * 2
+        bullet.x += index22 * 4 - lvl * 2
         if (spread > 0) {
-            bullet.vx += index2 * 4 - lvl * 2
+            bullet.vx += index22 * 4 - lvl * 2
         }
     }
 }
