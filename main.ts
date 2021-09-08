@@ -177,6 +177,7 @@ function destroyFighter () {
 }
 function shootWeapon () {
     shootBulletPillar(weaponLevel, 1)
+    shoot_missile("missile", 2)
 }
 statusbars.onZero(StatusBarKind.Health, function (status) {
     status.spriteAttachedTo().destroy(effects.disintegrate, 500)
@@ -216,6 +217,28 @@ function spawnGhost () {
         locGhost.setFlag(SpriteFlag.AutoDestroy, true)
         locGhost.setPosition(randint(0, 160), 0)
         locGhost.setVelocity(0.6 * (fighter.x - locGhost.x), randint(60, 90))
+    }
+}
+function shoot_missile (_type: string, num: number) {
+    if ("missile" == _type) {
+        for (let index = 0; index <= num - 1; index++) {
+            new_missle = sprites.createProjectileFromSprite(img`
+                . . 1 1 . . 
+                . d 1 1 1 . 
+                d 1 1 1 1 . 
+                d 1 1 1 1 . 
+                d 1 1 1 1 . 
+                d 1 1 d 1 . 
+                d 1 1 d 1 . 
+                d 1 1 d 1 . 
+                d 1 1 d 1 1 
+                1 1 1 1 1 1 
+                1 1 1 1 1 1 
+                1 . 4 4 . 1 
+                `, fighter, Math.map(index, 0, num - 1, -20, 20), 70)
+            new_missle.setKind(SpriteKind.weapon)
+            new_missle.ay = -200
+        }
     }
 }
 sprites.onOverlap(SpriteKind.Player, SpriteKind.Projectile, function (sprite, otherSprite) {
@@ -376,6 +399,7 @@ sprites.onOverlap(SpriteKind.Player, SpriteKind.Enemy, function (sprite, otherSp
 })
 let bullet: Sprite = null
 let statusbar: StatusBarSprite = null
+let new_missle: Sprite = null
 let locGhost: Sprite = null
 let projectile: Sprite = null
 let maxEnemyScatterBullet = 0
