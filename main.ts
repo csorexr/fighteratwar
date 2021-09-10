@@ -185,7 +185,7 @@ function destroyFighter () {
 }
 function shootWeapon () {
     shootBulletPillar(weaponLevel, 1)
-    shoot_missile("missile", 2)
+    shoot_missile("homing", 2)
 }
 statusbars.onZero(StatusBarKind.Health, function (status) {
     status.spriteAttachedTo().destroy(effects.disintegrate, 500)
@@ -250,24 +250,22 @@ function shoot_missile (missile_type: string, num: number) {
     } else if ("homing" == missile_type) {
         for (let index2 = 0; index2 <= num - 1; index2++) {
             new_missle = sprites.createProjectileFromSprite(img`
-                . . 1 1 . . 
-                . d 1 1 1 . 
-                d 1 1 1 1 . 
-                d 1 1 1 1 . 
-                d 1 1 1 1 . 
-                d 1 1 d 1 . 
-                d 1 1 d 1 . 
-                d 1 1 d 1 . 
-                d 1 1 d 1 1 
-                1 1 1 1 1 1 
-                1 1 1 1 1 1 
-                1 . 4 4 . 1 
-                `, fighter, Math.map(index2, 0, num - 1, -20, 20), 70)
+                . . 6 6 . . 
+                . d 6 6 6 . 
+                d 6 6 6 6 . 
+                d 6 6 6 6 . 
+                d 6 6 6 6 . 
+                d 6 6 d 6 . 
+                d 6 6 d 6 . 
+                d 6 6 d 6 . 
+                d 6 6 d 6 6 
+                6 6 6 6 6 6 
+                6 6 6 6 6 6 
+                6 . 4 4 . 6 
+                `, fighter, Math.map(index2, 0, num - 1, -20, 20), 20)
             new_missle.setKind(SpriteKind.Missiles)
-            new_missle.ay = -200
+            find_target(new_missle)
         }
-    } else {
-    	
     }
 }
 sprites.onOverlap(SpriteKind.Missiles, SpriteKind.Enemy, function (sprite, otherSprite) {
@@ -397,6 +395,17 @@ function ghostFire () {
                 projectile.setFlag(SpriteFlag.AutoDestroy, true)
             }
         }
+    }
+}
+function find_target (spr_missile: Sprite) {
+    if (currentStage == 1) {
+        if (sprites.allOfKind(SpriteKind.Enemy).length > 0) {
+            spr_missile.follow(sprites.allOfKind(SpriteKind.Enemy)._pickRandom())
+        } else {
+            spr_missile.ay = 200
+        }
+    } else if (currentStage == 2) {
+        spr_missile.follow(sprites.allOfKind(SpriteKind.Bosses)._pickRandom())
     }
 }
 function shootBulletPillar (lvl: number, spread: number) {
