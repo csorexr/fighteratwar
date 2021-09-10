@@ -1,11 +1,13 @@
 namespace SpriteKind {
     export const weapon = SpriteKind.create()
     export const Bosses = SpriteKind.create()
+    export const Missiles = SpriteKind.create()
 }
 sprites.onOverlap(SpriteKind.weapon, SpriteKind.Enemy, function (sprite, otherSprite) {
     info.changeScoreBy(100)
     dropPowerUp(30, otherSprite)
     otherSprite.destroy()
+    sprite.destroy()
 })
 function sustainBossS1Phase3 () {
     // if already finished several shots, change back to phase-2;
@@ -160,6 +162,12 @@ function sustainBossS1 () {
         sustainBossS1Phase3()
     }
 }
+sprites.onOverlap(SpriteKind.Missiles, SpriteKind.Bosses, function (sprite, otherSprite) {
+    sprite.destroy()
+    info.changeScoreBy(10)
+    dropPowerUp(1, otherSprite)
+    bossBeShot()
+})
 function destroyFighter () {
     if (!(bFighterDown)) {
         bFighterDown = true
@@ -236,7 +244,7 @@ function shoot_missile (missile_type: string, num: number) {
                 1 1 1 1 1 1 
                 1 . 4 4 . 1 
                 `, fighter, Math.map(index2, 0, num - 1, -20, 20), 70)
-            new_missle.setKind(SpriteKind.weapon)
+            new_missle.setKind(SpriteKind.Missiles)
             new_missle.ay = -200
         }
     } else if ("homing" == missile_type) {
@@ -255,13 +263,19 @@ function shoot_missile (missile_type: string, num: number) {
                 1 1 1 1 1 1 
                 1 . 4 4 . 1 
                 `, fighter, Math.map(index2, 0, num - 1, -20, 20), 70)
-            new_missle.setKind(SpriteKind.weapon)
+            new_missle.setKind(SpriteKind.Missiles)
             new_missle.ay = -200
         }
     } else {
     	
     }
 }
+sprites.onOverlap(SpriteKind.Missiles, SpriteKind.Enemy, function (sprite, otherSprite) {
+    info.changeScoreBy(100)
+    dropPowerUp(30, otherSprite)
+    otherSprite.destroy()
+    sprite.destroy()
+})
 sprites.onOverlap(SpriteKind.Player, SpriteKind.Projectile, function (sprite, otherSprite) {
     otherSprite.destroy()
     destroyFighter()
