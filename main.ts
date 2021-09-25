@@ -185,7 +185,7 @@ function destroyFighter () {
 }
 function shootWeapon () {
     shootBulletPillar(weaponLevel, 1)
-    shoot_missile("homing", 2)
+    shoot_missile("missile", 2)
 }
 statusbars.onZero(StatusBarKind.Health, function (status) {
     status.spriteAttachedTo().destroy(effects.disintegrate, 500)
