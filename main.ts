@@ -4,10 +4,10 @@ namespace SpriteKind {
     export const Missiles = SpriteKind.create()
 }
 sprites.onOverlap(SpriteKind.weapon, SpriteKind.Enemy, function (sprite, otherSprite) {
+    sprite.destroy()
     info.changeScoreBy(100)
     dropPowerUp(30, otherSprite)
     otherSprite.destroy()
-    sprite.destroy()
 })
 function sustainBossS1Phase3 () {
     // if already finished several shots, change back to phase-2;
@@ -185,7 +185,7 @@ function destroyFighter () {
 }
 function shootWeapon () {
     shootBulletPillar(weaponLevel, 1)
-    shoot_missile("missile", 2)
+    shoot_missile("homing", 2)
 }
 statusbars.onZero(StatusBarKind.Health, function (status) {
     status.spriteAttachedTo().destroy(effects.disintegrate, 500)
@@ -271,8 +271,8 @@ function shoot_missile (missile_type: string, num: number) {
 sprites.onOverlap(SpriteKind.Missiles, SpriteKind.Enemy, function (sprite, otherSprite) {
     info.changeScoreBy(100)
     dropPowerUp(30, otherSprite)
-    otherSprite.destroy()
     sprite.destroy()
+    otherSprite.destroy()
 })
 sprites.onOverlap(SpriteKind.Player, SpriteKind.Projectile, function (sprite, otherSprite) {
     otherSprite.destroy()
@@ -317,6 +317,12 @@ sprites.onDestroyed(SpriteKind.Enemy, function (sprite) {
             timer.after(500, function () {
                 spawnBossS1()
             })
+        }
+    }
+    for (let value of sprites.allOfKind(SpriteKind.Missiles)) {
+        if (sprites.readDataSprite(value, "following") == sprite) {
+            value.ax = 3 * value.vx
+            value.ay = 3 * value.vy
         }
     }
 })
@@ -400,7 +406,9 @@ function ghostFire () {
 function find_target (spr_missile: Sprite) {
     if (currentStage == 1) {
         if (sprites.allOfKind(SpriteKind.Enemy).length > 0) {
-            spr_missile.follow(sprites.allOfKind(SpriteKind.Enemy)._pickRandom())
+            flwEnemy = sprites.allOfKind(SpriteKind.Enemy)._pickRandom()
+            spr_missile.follow(flwEnemy)
+            sprites.setDataSprite(spr_missile, "following", flwEnemy)
         } else {
             spr_missile.ay = 200
         }
@@ -442,6 +450,7 @@ sprites.onOverlap(SpriteKind.Player, SpriteKind.Enemy, function (sprite, otherSp
     destroyFighter()
 })
 let bullet: Sprite = null
+let flwEnemy: Sprite = null
 let statusbar: StatusBarSprite = null
 let new_missle: Sprite = null
 let locGhost: Sprite = null
