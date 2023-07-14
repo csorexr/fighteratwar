@@ -6,6 +6,7 @@ sprites.onOverlap(SpriteKind.weapon, SpriteKind.Enemy, function (sprite, otherSp
     info.changeScoreBy(100)
     dropPowerUp(30, otherSprite)
     otherSprite.destroy()
+    sprite.destroy()
 })
 function sustainBossS1Phase3 () {
     // if already finished several shots, change back to phase-2;
